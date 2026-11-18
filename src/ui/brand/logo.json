@@ -1,0 +1,12 @@
+{
+  "size": 1024,
+  "background": "#0d1117",
+  "frame": { "x": 152, "y": 152, "size": 720, "radius": 150, "stroke": "#c9d1d9", "strokeWidth": 36 },
+  "circleStroke": "#e6edf3",
+  "circleStrokeWidth": 8,
+  "circles": [
+    { "cx": 270, "cy": 512, "r": 60, "fill": "#0e4429" },
+    { "cx": 452, "cy": 512, "r": 88, "fill": "#26a641" },
+    { "cx": 694, "cy": 512, "r": 120, "fill": "#39d353" }
+  ]
+}
