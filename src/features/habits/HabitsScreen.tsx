@@ -6,6 +6,7 @@ import { createScheduleResolver } from '@/domain/schedule';
 import { AppText } from '@/ui/components/AppText';
 import { Blankslate } from '@/ui/components/Blankslate';
 import { Button } from '@/ui/components/Button';
+import { Fab } from '@/ui/components/Fab';
 import { Screen } from '@/ui/components/Screen';
 import { useTheme } from '@/ui/theme/ThemeProvider';
 import { radius, space } from '@/ui/theme/tokens';
@@ -47,7 +48,15 @@ export function HabitsScreen() {
   }
 
   return (
-    <Screen>
+    <Screen
+      fab={
+        <Fab
+          icon="plus"
+          accessibilityLabel="Novo hábito"
+          onPress={() => router.push('/habit/new')}
+        />
+      }
+    >
       <View
         style={{
           borderWidth: 1,

@@ -9,13 +9,14 @@ import { useTheme } from '@/ui/theme/ThemeProvider';
 
 type IconName = ComponentProps<typeof Octicons>['name'];
 
-const newHabit = () => (
+// Novo hábito: botão flutuante nas telas Hoje e Hábitos. Nova tarefa: + no header.
+const newTask = () => (
   <View style={{ marginRight: 12 }}>
     <IconButton
       icon="plus"
       size={32}
-      accessibilityLabel="Novo hábito"
-      onPress={() => router.push('/habit/new')}
+      accessibilityLabel="Nova tarefa"
+      onPress={() => router.push('/task/new')}
     />
   </View>
 );
@@ -45,9 +46,10 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: colors.canvas },
       }}
     >
-      <Tabs.Screen name="index" options={{ ...tab('Hoje', 'git-commit'), headerRight: newHabit }} />
+      <Tabs.Screen name="index" options={tab('Hoje', 'git-commit')} />
+      <Tabs.Screen name="tasks" options={{ ...tab('Tarefas', 'tasklist'), headerRight: newTask }} />
       <Tabs.Screen name="overview" options={tab('Geral', 'graph')} />
-      <Tabs.Screen name="habits" options={{ ...tab('Hábitos', 'repo'), headerRight: newHabit }} />
+      <Tabs.Screen name="habits" options={tab('Hábitos', 'repo')} />
       <Tabs.Screen name="settings" options={tab('Ajustes', 'gear')} />
     </Tabs>
   );

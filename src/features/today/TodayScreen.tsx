@@ -8,17 +8,20 @@ import { isGoalMet } from '@/domain/level';
 import { AppText } from '@/ui/components/AppText';
 import { Blankslate } from '@/ui/components/Blankslate';
 import { Button } from '@/ui/components/Button';
+import { Fab } from '@/ui/components/Fab';
 import { Logo } from '@/ui/components/Logo';
 import { Screen } from '@/ui/components/Screen';
 import { useTheme } from '@/ui/theme/ThemeProvider';
 import { space } from '@/ui/theme/tokens';
 
 import { formatShortDate } from '../shared/model';
+import { TodayTasks } from '../tasks/TodayTasks';
 import { useBoard, useCommitActions, useToday } from '../shared/queries';
 import { HabitCard } from './HabitCard';
 import { buildTodayList, todaySummary, type TodayItem } from './model';
 
 const showError = (e: unknown) => Alert.alert('Não foi possível salvar', (e as Error).message);
+const openNewHabit = () => router.push('/habit/new');
 
 export function TodayScreen() {
   const { colors } = useTheme();
@@ -74,7 +77,14 @@ export function TodayScreen() {
   );
 
   return (
-    <Screen>
+    <Screen
+      fab={
+        // Sem hábitos, o estado vazio já tem o botão "Novo hábito".
+        board.data.length > 0 ? (
+          <Fab icon="plus" accessibilityLabel="Novo hábito" onPress={openNewHabit} />
+        ) : null
+      }
+    >
       <View
         style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}
       >
@@ -106,6 +116,8 @@ export function TodayScreen() {
       ) : (
         list.active.map(renderCard)
       )}
+
+      <TodayTasks today={today} />
 
       {list.other.length > 0 ? (
         <View style={{ gap: space.md }}>

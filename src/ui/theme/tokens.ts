@@ -16,6 +16,8 @@ export interface ThemeColors {
   accent: string; // links / foco / item ativo
   success: string;
   danger: string;
+  /** Concluído (roxo "done" do GitHub). */
+  done: string;
   buttonPrimaryBg: string;
   buttonPrimaryBorder: string;
   buttonPrimaryText: string;
@@ -33,6 +35,7 @@ export const darkColors: ThemeColors = {
   accent: '#2f81f7',
   success: '#3fb950',
   danger: '#f85149',
+  done: '#8957e5',
   buttonPrimaryBg: '#238636',
   buttonPrimaryBorder: 'rgba(240,246,252,0.1)',
   buttonPrimaryText: '#ffffff',
@@ -50,6 +53,7 @@ export const lightColors: ThemeColors = {
   accent: '#0969da',
   success: '#1a7f37',
   danger: '#d1242f',
+  done: '#8250df',
   buttonPrimaryBg: '#1f883d',
   buttonPrimaryBorder: 'rgba(31,35,40,0.15)',
   buttonPrimaryText: '#ffffff',

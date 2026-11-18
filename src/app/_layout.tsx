@@ -46,6 +46,11 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="habit/new" options={{ title: 'Novo hábito', presentation: 'modal' }} />
         <Stack.Screen name="habit/[id]" options={{ title: '' }} />
+        <Stack.Screen name="task/new" options={{ title: 'Nova tarefa', presentation: 'modal' }} />
+        <Stack.Screen
+          name="task/[id]"
+          options={{ title: 'Editar tarefa', presentation: 'modal' }}
+        />
       </Stack>
     </ThemeProvider>
   );
