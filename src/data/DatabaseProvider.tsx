@@ -1,0 +1,81 @@
+import { randomUUID } from 'expo-crypto';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { View } from 'react-native';
+
+import { AppText } from '@/ui/components/AppText';
+import { Blankslate } from '@/ui/components/Blankslate';
+import { useTheme } from '@/ui/theme/ThemeProvider';
+import { space } from '@/ui/theme/tokens';
+
+import { systemClock } from './context';
+import { openExpoDriver } from './expoDriver';
+import { migrate } from './migrations';
+import { createRepositories, type Repositories } from './repositories';
+
+interface DatabaseState {
+  repos: Repositories;
+  schemaVersion: number;
+}
+
+const DatabaseContext = createContext<DatabaseState | null>(null);
+
+type Status =
+  { kind: 'loading' } | { kind: 'ready'; state: DatabaseState } | { kind: 'error'; error: Error };
+
+/** Abre o SQLite e aplica as migrations antes de renderizar as telas. */
+export function DatabaseProvider({ children }: { children: ReactNode }) {
+  const { colors } = useTheme();
+  const [status, setStatus] = useState<Status>({ kind: 'loading' });
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const db = await openExpoDriver();
+        const schemaVersion = await migrate(db);
+        const repos = createRepositories({ db, clock: systemClock, newId: randomUUID });
+        if (!cancelled) setStatus({ kind: 'ready', state: { repos, schemaVersion } });
+      } catch (e) {
+        if (!cancelled) setStatus({ kind: 'error', error: e as Error });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (status.kind === 'loading') {
+    return <View style={{ flex: 1, backgroundColor: colors.canvas }} />;
+  }
+  if (status.kind === 'error') {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.canvas,
+          justifyContent: 'center',
+          padding: space.lg,
+        }}
+      >
+        <Blankslate
+          icon="alert"
+          title="Não foi possível abrir o banco de dados"
+          description="Os dados não foram alterados. Feche e abra o app novamente."
+        >
+          <AppText variant="mono" style={{ color: colors.danger }}>
+            {status.error.message}
+          </AppText>
+        </Blankslate>
+      </View>
+    );
+  }
+  return <DatabaseContext.Provider value={status.state}>{children}</DatabaseContext.Provider>;
+}
+
+export function useDatabase(): DatabaseState {
+  const ctx = useContext(DatabaseContext);
+  if (!ctx) throw new Error('useDatabase precisa estar dentro de <DatabaseProvider>');
+  return ctx;
+}
+
+export const useRepositories = () => useDatabase().repos;

@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { useEffect, useMemo } from 'react';
 
+import { DatabaseProvider } from '@/data/DatabaseProvider';
 import { AppThemeProvider, useTheme } from '@/ui/theme/ThemeProvider';
 
 function RootNavigator() {
@@ -42,7 +43,9 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <AppThemeProvider>
-      <RootNavigator />
+      <DatabaseProvider>
+        <RootNavigator />
+      </DatabaseProvider>
     </AppThemeProvider>
   );
 }

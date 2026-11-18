@@ -1,5 +1,6 @@
 import { Pressable, View } from 'react-native';
 
+import { useDatabase } from '@/data/DatabaseProvider';
 import { AppText } from '@/ui/components/AppText';
 import { Card } from '@/ui/components/Card';
 import { LevelLegend } from '@/ui/components/LevelLegend';
@@ -53,6 +54,7 @@ function ThemeSegmented() {
 }
 
 export default function SettingsScreen() {
+  const { schemaVersion } = useDatabase();
   return (
     <Screen>
       <Card style={{ gap: space.md }}>
@@ -64,7 +66,15 @@ export default function SettingsScreen() {
         <Logo size={40} />
         <View>
           <AppText variant="heading">Todo Tracker</AppText>
-          <AppText variant="mono">v1.0.0</AppText>
+          <AppText variant="caption">
+            <AppText variant="mono" style={{ fontSize: 12 }}>
+              v1.0.0
+            </AppText>
+            {' · schema '}
+            <AppText variant="mono" style={{ fontSize: 12 }}>
+              v{schemaVersion}
+            </AppText>
+          </AppText>
         </View>
       </Card>
     </Screen>
