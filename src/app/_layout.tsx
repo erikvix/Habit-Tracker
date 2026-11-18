@@ -1,7 +1,8 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { DatabaseProvider } from '@/data/DatabaseProvider';
 import { AppThemeProvider, useTheme } from '@/ui/theme/ThemeProvider';
@@ -33,18 +34,41 @@ function RootNavigator() {
   return (
     <ThemeProvider value={navTheme}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      <Stack screenOptions={{ contentStyle: { backgroundColor: colors.canvas } }}>
+      <Stack
+        screenOptions={{
+          contentStyle: { backgroundColor: colors.canvas },
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
+          headerTitleStyle: { fontWeight: '600', fontSize: 16 },
+          headerShadowVisible: false,
+        }}
+      >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="habit/new" options={{ title: 'Novo hábito', presentation: 'modal' }} />
+        <Stack.Screen name="habit/[id]" options={{ title: '' }} />
       </Stack>
     </ThemeProvider>
   );
 }
 
 export default function RootLayout() {
+  // Dados locais: as mutações invalidam o cache, então nada fica "velho" sozinho.
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: { staleTime: Infinity, retry: false },
+          mutations: { retry: false },
+        },
+      }),
+  );
+
   return (
     <AppThemeProvider>
       <DatabaseProvider>
-        <RootNavigator />
+        <QueryClientProvider client={queryClient}>
+          <RootNavigator />
+        </QueryClientProvider>
       </DatabaseProvider>
     </AppThemeProvider>
   );

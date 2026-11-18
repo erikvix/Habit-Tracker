@@ -1,10 +1,24 @@
 import Octicons from '@expo/vector-icons/Octicons';
+import { router } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 import type { ComponentProps } from 'react';
+import { View } from 'react-native';
 
+import { IconButton } from '@/ui/components/IconButton';
 import { useTheme } from '@/ui/theme/ThemeProvider';
 
 type IconName = ComponentProps<typeof Octicons>['name'];
+
+const newHabit = () => (
+  <View style={{ marginRight: 12 }}>
+    <IconButton
+      icon="plus"
+      size={32}
+      accessibilityLabel="Novo hábito"
+      onPress={() => router.push('/habit/new')}
+    />
+  </View>
+);
 
 export default function TabsLayout() {
   const { colors } = useTheme();
@@ -31,9 +45,9 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: colors.canvas },
       }}
     >
-      <Tabs.Screen name="index" options={tab('Hoje', 'git-commit')} />
+      <Tabs.Screen name="index" options={{ ...tab('Hoje', 'git-commit'), headerRight: newHabit }} />
       <Tabs.Screen name="overview" options={tab('Geral', 'graph')} />
-      <Tabs.Screen name="habits" options={tab('Hábitos', 'repo')} />
+      <Tabs.Screen name="habits" options={{ ...tab('Hábitos', 'repo'), headerRight: newHabit }} />
       <Tabs.Screen name="settings" options={tab('Ajustes', 'gear')} />
     </Tabs>
   );

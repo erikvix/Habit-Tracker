@@ -1,4 +1,4 @@
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { useDatabase } from '@/data/DatabaseProvider';
 import { AppText } from '@/ui/components/AppText';
@@ -6,8 +6,9 @@ import { Card } from '@/ui/components/Card';
 import { LevelLegend } from '@/ui/components/LevelLegend';
 import { Logo } from '@/ui/components/Logo';
 import { Screen } from '@/ui/components/Screen';
+import { SegmentedControl } from '@/ui/components/SegmentedControl';
 import { useTheme } from '@/ui/theme/ThemeProvider';
-import { radius, space, type ThemePreference } from '@/ui/theme/tokens';
+import { space, type ThemePreference } from '@/ui/theme/tokens';
 
 const options: { value: ThemePreference; label: string }[] = [
   { value: 'system', label: 'Sistema' },
@@ -16,40 +17,14 @@ const options: { value: ThemePreference; label: string }[] = [
 ];
 
 function ThemeSegmented() {
-  const { colors, preference, setPreference } = useTheme();
+  const { preference, setPreference } = useTheme();
   return (
-    <View
-      accessibilityRole="radiogroup"
-      style={{
-        flexDirection: 'row',
-        backgroundColor: colors.surfaceMuted,
-        borderRadius: radius.sm,
-        padding: 2,
-      }}
-    >
-      {options.map((o) => {
-        const selected = o.value === preference;
-        return (
-          <Pressable
-            key={o.value}
-            accessibilityRole="radio"
-            accessibilityState={{ selected }}
-            onPress={() => setPreference(o.value)}
-            style={{
-              flex: 1,
-              alignItems: 'center',
-              paddingVertical: space.sm,
-              borderRadius: radius.sm - 1,
-              backgroundColor: selected ? colors.canvas : 'transparent',
-              borderWidth: selected ? 1 : 0,
-              borderColor: colors.border,
-            }}
-          >
-            <AppText style={{ fontWeight: selected ? '600' : '400' }}>{o.label}</AppText>
-          </Pressable>
-        );
-      })}
-    </View>
+    <SegmentedControl
+      accessibilityLabel="Tema"
+      options={options}
+      value={preference}
+      onChange={setPreference}
+    />
   );
 }
 
