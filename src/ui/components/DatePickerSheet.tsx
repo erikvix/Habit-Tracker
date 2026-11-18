@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 import { buildMonthGrid, weekdayOrder } from '@/domain/calendar';
 import { addMonths, monthKey } from '@/domain/localDate';
 import type { LocalDate, MonthKey, Weekday } from '@/domain/types';
+import { monthLongLabel } from '@/features/shared/model';
 
 import { useTheme } from '../theme/ThemeProvider';
 import { fonts, radius, space } from '../theme/tokens';
@@ -11,23 +12,7 @@ import { AppText } from './AppText';
 import { IconButton } from './IconButton';
 import { Sheet } from './Sheet';
 
-const MONTHS = [
-  'Janeiro',
-  'Fevereiro',
-  'Março',
-  'Abril',
-  'Maio',
-  'Junho',
-  'Julho',
-  'Agosto',
-  'Setembro',
-  'Outubro',
-  'Novembro',
-  'Dezembro',
-] as const;
 const DOW = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'] as const;
-
-const monthTitle = (m: MonthKey) => `${MONTHS[Number(m.slice(5, 7)) - 1]} ${m.slice(0, 4)}`;
 
 interface Props {
   visible: boolean;
@@ -73,7 +58,7 @@ function CalendarBody({
           onPress={() => setMonth((m) => addMonths(m, -1))}
         />
         <AppText variant="heading" style={{ flex: 1, textAlign: 'center' }}>
-          {monthTitle(month)}
+          {monthLongLabel(month)}
         </AppText>
         <IconButton
           icon="chevron-right"

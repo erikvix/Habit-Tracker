@@ -18,6 +18,8 @@ export interface ThemeColors {
   danger: string;
   /** Concluído (roxo "done" do GitHub). */
   done: string;
+  /** Destaque de atenção (laranja/amarelo do GitHub), ex.: chama da sequência. */
+  attention: string;
   buttonPrimaryBg: string;
   buttonPrimaryBorder: string;
   buttonPrimaryText: string;
@@ -36,6 +38,7 @@ export const darkColors: ThemeColors = {
   success: '#3fb950',
   danger: '#f85149',
   done: '#8957e5',
+  attention: '#d29922',
   buttonPrimaryBg: '#238636',
   buttonPrimaryBorder: 'rgba(240,246,252,0.1)',
   buttonPrimaryText: '#ffffff',
@@ -54,6 +57,7 @@ export const lightColors: ThemeColors = {
   success: '#1a7f37',
   danger: '#d1242f',
   done: '#8250df',
+  attention: '#9a6700',
   buttonPrimaryBg: '#1f883d',
   buttonPrimaryBorder: 'rgba(31,35,40,0.15)',
   buttonPrimaryText: '#ffffff',

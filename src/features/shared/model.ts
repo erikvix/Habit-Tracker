@@ -28,10 +28,35 @@ const MONTHS = [
   'dez',
 ] as const;
 
+const MONTHS_LONG = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
+] as const;
+
+/** '2026-11' → 'Novembro 2026'. */
+export function monthLongLabel(month: string): string {
+  return `${MONTHS_LONG[Number(month.slice(5, 7)) - 1]} ${month.slice(0, 4)}`;
+}
+
 /** Rótulo de mês abreviado e capitalizado: '2026-11' → 'Nov'. */
 export function monthShortLabel(month: string): string {
-  const m = MONTHS[Number(month.slice(5, 7)) - 1] ?? '';
+  const m = monthAbbr(month);
   return m.charAt(0).toUpperCase() + m.slice(1);
+}
+
+/** '2026-11' → 'nov' (minúsculo, como se escreve mês em pt-BR). */
+export function monthAbbr(month: string): string {
+  return MONTHS[Number(month.slice(5, 7)) - 1] ?? '';
 }
 
 /** '2026-11-18' → 'qua, 18 nov'. Sem Intl: resultado idêntico em teste e no aparelho. */

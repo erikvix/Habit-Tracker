@@ -20,6 +20,7 @@ import { useTheme } from '@/ui/theme/ThemeProvider';
 import { radius, space } from '@/ui/theme/tokens';
 
 import { canEditDay } from '../habit-day/model';
+import { HabitMetrics } from '../metrics/HabitMetrics';
 import { useHabitActions } from '../shared/habitQueries';
 import { dayProgressText, formatShortDate } from '../shared/model';
 import { useCommitCounts, useHabitHistory, useSettings, useToday } from '../shared/queries';
@@ -131,12 +132,7 @@ export function HabitDetailScreen({ id }: { id: string }) {
       {habit.description ? <AppText variant="muted">{habit.description}</AppText> : null}
 
       <Card style={{ gap: space.md, paddingHorizontal: space.md }}>
-        <AppText variant="heading">
-          <AppText variant="mono" style={{ fontWeight: '600', fontSize: 16 }}>
-            {total ?? '…'}
-          </AppText>{' '}
-          {total === 1 ? 'commit' : 'commits'} no último ano
-        </AppText>
+        <AppText variant="heading">Últimos 12 meses</AppText>
         <ContributionGraph
           weeks={graph.weeks}
           monthLabels={graph.monthLabels}
@@ -176,6 +172,8 @@ export function HabitDetailScreen({ id }: { id: string }) {
           />
         ) : null}
       </Card>
+
+      <HabitMetrics history={history.data} today={today} yearFrom={from} totalCommits={total} />
 
       <View style={{ gap: space.sm, marginTop: space.lg }}>
         {archived ? (
