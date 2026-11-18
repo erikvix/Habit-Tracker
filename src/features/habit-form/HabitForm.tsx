@@ -39,9 +39,20 @@ interface Props {
   submitLabel: string;
   submitting?: boolean;
   onSubmit: (values: HabitFormValues) => void;
+  /** Edição: o tipo não muda depois de criado (mudaria o sentido do histórico). */
+  lockGoalType?: boolean;
+  /** Aviso exibido acima do botão (ex.: mudanças valem a partir de hoje). */
+  notice?: string;
 }
 
-export function HabitForm({ initial = emptyHabitForm, submitLabel, submitting, onSubmit }: Props) {
+export function HabitForm({
+  initial = emptyHabitForm,
+  submitLabel,
+  submitting,
+  onSubmit,
+  lockGoalType,
+  notice,
+}: Props) {
   const { colors } = useTheme();
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState<HabitFormErrors>({});
@@ -68,7 +79,7 @@ export function HabitForm({ initial = emptyHabitForm, submitLabel, submitting, o
         onChangeText={(name) => update({ ...values, name })}
         error={errors.name}
         maxLength={80}
-        autoFocus
+        autoFocus={!lockGoalType}
         returnKeyType="next"
       />
       <TextField
@@ -81,13 +92,26 @@ export function HabitForm({ initial = emptyHabitForm, submitLabel, submitting, o
 
       <Card style={{ gap: space.md }}>
         <AppText style={{ fontWeight: '600' }}>Tipo de meta</AppText>
-        <SegmentedControl
-          accessibilityLabel="Tipo de meta"
-          options={GOAL_OPTIONS}
-          value={values.goalType}
-          onChange={(g) => update(changeGoalType(values, g))}
-        />
-        <AppText variant="caption">{GOAL_HINT[values.goalType]}</AppText>
+        {lockGoalType ? (
+          <>
+            <AppText variant="mono">
+              {GOAL_OPTIONS.find((o) => o.value === values.goalType)?.label}
+            </AppText>
+            <AppText variant="caption">
+              O tipo não pode ser alterado depois de criado. Para trocar, crie outro hábito.
+            </AppText>
+          </>
+        ) : (
+          <>
+            <SegmentedControl
+              accessibilityLabel="Tipo de meta"
+              options={GOAL_OPTIONS}
+              value={values.goalType}
+              onChange={(g) => update(changeGoalType(values, g))}
+            />
+            <AppText variant="caption">{GOAL_HINT[values.goalType]}</AppText>
+          </>
+        )}
 
         {values.goalType !== 'binary' ? (
           <View style={{ gap: space.xs }}>
@@ -135,6 +159,7 @@ export function HabitForm({ initial = emptyHabitForm, submitLabel, submitting, o
         )}
       </Card>
 
+      {notice ? <AppText variant="caption">{notice}</AppText> : null}
       <Button
         kind="primary"
         title={submitting ? 'Salvando…' : submitLabel}

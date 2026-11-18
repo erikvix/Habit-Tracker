@@ -1,12 +1,13 @@
 import * as Haptics from 'expo-haptics';
 import { router, Stack } from 'expo-router';
-import { Alert, KeyboardAvoidingView, ScrollView } from 'react-native';
+import { KeyboardAvoidingView, ScrollView } from 'react-native';
 
 import { Blankslate } from '@/ui/components/Blankslate';
+import { useDialog } from '@/ui/dialog/DialogProvider';
 import { useTheme } from '@/ui/theme/ThemeProvider';
 import { space } from '@/ui/theme/tokens';
 
-import { useToday } from '../shared/queries';
+import { useSettings, useToday } from '../shared/queries';
 import { taskToForm, toTaskInput } from './model';
 import { useTask, useTaskActions } from './queries';
 import { TaskForm } from './TaskForm';
@@ -17,7 +18,10 @@ export function TaskEditorScreen({ id }: { id?: string }) {
   const today = useToday();
   const task = useTask(id);
   const actions = useTaskActions();
-  const onError = (e: Error) => Alert.alert('Não foi possível salvar', e.message);
+  const { data: settings } = useSettings();
+  const weekStart = settings?.weekStart ?? 0;
+  const dialog = useDialog();
+  const onError = dialog.showError('Não foi possível salvar');
 
   const wrap = (children: React.ReactNode) => (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.canvas }} behavior="height">
@@ -35,6 +39,7 @@ export function TaskEditorScreen({ id }: { id?: string }) {
     return wrap(
       <TaskForm
         today={today}
+        weekStart={weekStart}
         submitLabel="Criar tarefa"
         submitting={actions.create.isPending}
         onSubmit={(v) =>
@@ -51,20 +56,21 @@ export function TaskEditorScreen({ id }: { id?: string }) {
   }
   if (!task.data) return wrap(null);
 
-  const confirmDelete = () =>
-    Alert.alert('Excluir tarefa?', `"${task.data.title}" será apagada definitivamente.`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Excluir',
-        style: 'destructive',
-        onPress: () => actions.remove.mutate(id, { onSuccess: () => router.back(), onError }),
-      },
-    ]);
+  const confirmDelete = async () => {
+    const ok = await dialog.confirm({
+      title: 'Excluir tarefa?',
+      message: `"${task.data.title}" será apagada definitivamente. Isso não pode ser desfeito.`,
+      confirmLabel: 'Excluir',
+      destructive: true,
+    });
+    if (ok) actions.remove.mutate(id, { onSuccess: () => router.back(), onError });
+  };
 
   return wrap(
     <TaskForm
       key={task.data.id}
       today={today}
+      weekStart={weekStart}
       initial={taskToForm(task.data, today)}
       submitLabel="Salvar"
       submitting={actions.update.isPending}

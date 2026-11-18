@@ -1,14 +1,14 @@
-import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { makeLocalDate } from '@/domain/localDate';
-import type { LocalDate } from '@/domain/types';
+import type { LocalDate, Weekday } from '@/domain/types';
 import { AppText } from '@/ui/components/AppText';
 import { Button } from '@/ui/components/Button';
 import { Card } from '@/ui/components/Card';
+import { DatePickerSheet } from '@/ui/components/DatePickerSheet';
 import { SegmentedControl } from '@/ui/components/SegmentedControl';
 import { TextField } from '@/ui/components/TextField';
+import { TimePickerSheet } from '@/ui/components/TimePickerSheet';
 import { useTheme } from '@/ui/theme/ThemeProvider';
 import { space } from '@/ui/theme/tokens';
 
@@ -16,6 +16,7 @@ import { formatShortDate } from '../shared/model';
 import {
   emptyTaskForm,
   formatMinute,
+  pastDueToKeep,
   resolveDueDate,
   validateTaskForm,
   type DueChoice,
@@ -30,9 +31,6 @@ const DUE_OPTIONS: readonly { value: DueChoice; label: string }[] = [
   { value: 'custom', label: 'Data' },
 ];
 
-const toDate = (ld: LocalDate) => new Date(`${ld}T12:00:00`);
-const fromDate = (d: Date) => makeLocalDate(d.getFullYear(), d.getMonth() + 1, d.getDate());
-
 interface Props {
   today: LocalDate;
   initial?: TaskFormValues;
@@ -42,10 +40,12 @@ interface Props {
   onDelete?: () => void;
   /** Só na edição: concluir / reabrir sem precisar da lista. */
   completion?: { done: boolean; busy?: boolean; onToggle: () => void };
+  weekStart?: Weekday;
 }
 
 export function TaskForm({
   today,
+  weekStart = 0,
   initial = emptyTaskForm,
   submitLabel,
   submitting,
@@ -57,36 +57,19 @@ export function TaskForm({
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState<TaskFormErrors>({});
   const [touched, setTouched] = useState(false);
+  const [picker, setPicker] = useState<'date' | 'time' | null>(null);
   const dueDate = resolveDueDate(values, today);
+  const keepPast = pastDueToKeep(initial, today);
+  const validate = (v: TaskFormValues) => validateTaskForm(v, today, keepPast);
 
   const update = (next: TaskFormValues) => {
     setValues(next);
-    if (touched) setErrors(validateTaskForm(next));
-  };
-
-  const pickDate = () =>
-    DateTimePickerAndroid.open({
-      mode: 'date',
-      value: toDate(values.customDate ?? today),
-      onValueChange: (_e, date) => update({ ...values, due: 'custom', customDate: fromDate(date) }),
-    });
-
-  const pickTime = () => {
-    const base = new Date();
-    const m = values.dueMinute ?? 9 * 60;
-    base.setHours(Math.floor(m / 60), m % 60, 0, 0);
-    DateTimePickerAndroid.open({
-      mode: 'time',
-      is24Hour: true,
-      value: base,
-      onValueChange: (_e, date) =>
-        update({ ...values, dueMinute: date.getHours() * 60 + date.getMinutes() }),
-    });
+    if (touched) setErrors(validate(next));
   };
 
   const submit = () => {
     setTouched(true);
-    const e = validateTaskForm(values);
+    const e = validate(values);
     setErrors(e);
     if (Object.keys(e).length === 0) onSubmit(values);
   };
@@ -116,7 +99,7 @@ export function TaskForm({
           options={DUE_OPTIONS}
           value={values.due}
           onChange={(due) => {
-            if (due === 'custom' && !values.customDate) pickDate();
+            if (due === 'custom' && !values.customDate) setPicker('date');
             update({ ...values, due, dueMinute: due === 'none' ? null : values.dueMinute });
           }}
         />
@@ -124,7 +107,7 @@ export function TaskForm({
           <Button
             icon="calendar"
             title={values.customDate ? formatShortDate(values.customDate) : 'Escolher data'}
-            onPress={pickDate}
+            onPress={() => setPicker('date')}
           />
         ) : null}
         {errors.due ? (
@@ -141,7 +124,7 @@ export function TaskForm({
                 title={
                   values.dueMinute !== null ? formatMinute(values.dueMinute) : 'Adicionar horário'
                 }
-                onPress={pickTime}
+                onPress={() => setPicker('time')}
               />
             </View>
             {values.dueMinute !== null ? (
@@ -172,6 +155,28 @@ export function TaskForm({
       {onDelete ? (
         <Button kind="danger" icon="trash" title="Excluir tarefa" onPress={onDelete} />
       ) : null}
+
+      <DatePickerSheet
+        visible={picker === 'date'}
+        value={values.customDate}
+        today={today}
+        minDate={today}
+        weekStart={weekStart}
+        onClose={() => setPicker(null)}
+        onSelect={(customDate) => {
+          setPicker(null);
+          update({ ...values, due: 'custom', customDate });
+        }}
+      />
+      <TimePickerSheet
+        visible={picker === 'time'}
+        value={values.dueMinute}
+        onClose={() => setPicker(null)}
+        onSelect={(dueMinute) => {
+          setPicker(null);
+          update({ ...values, dueMinute });
+        }}
+      />
     </View>
   );
 }

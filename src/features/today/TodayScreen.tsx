@@ -2,7 +2,7 @@ import Octicons from '@expo/vector-icons/Octicons';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { isGoalMet } from '@/domain/level';
 import { AppText } from '@/ui/components/AppText';
@@ -11,6 +11,7 @@ import { Button } from '@/ui/components/Button';
 import { Fab } from '@/ui/components/Fab';
 import { Logo } from '@/ui/components/Logo';
 import { Screen } from '@/ui/components/Screen';
+import { useDialog } from '@/ui/dialog/DialogProvider';
 import { useTheme } from '@/ui/theme/ThemeProvider';
 import { space } from '@/ui/theme/tokens';
 
@@ -20,7 +21,6 @@ import { useBoard, useCommitActions, useToday } from '../shared/queries';
 import { HabitCard } from './HabitCard';
 import { buildTodayList, todaySummary, type TodayItem } from './model';
 
-const showError = (e: unknown) => Alert.alert('Não foi possível salvar', (e as Error).message);
 const openNewHabit = () => router.push('/habit/new');
 
 export function TodayScreen() {
@@ -28,6 +28,7 @@ export function TodayScreen() {
   const today = useToday();
   const board = useBoard(today);
   const { commit, undo } = useCommitActions();
+  const showError = useDialog().showError('Não foi possível salvar');
   const [showOther, setShowOther] = useState(false);
 
   if (board.isPending) return <Screen>{null}</Screen>;

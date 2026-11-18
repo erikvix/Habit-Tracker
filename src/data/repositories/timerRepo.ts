@@ -45,11 +45,12 @@ export function createTimerRepo(ctx: RepoContext, settings: SettingsRepo, commit
     /** Inicia (idempotente: se já está rodando, devolve o existente). */
     async start(habitId: string): Promise<ActiveTimer> {
       return db.transaction(async (tx) => {
-        const habit = await tx.get<{ goal_type: string }>(
-          'SELECT goal_type FROM habit WHERE id = ?',
+        const habit = await tx.get<{ goal_type: string; archived_at: string | null }>(
+          'SELECT goal_type, archived_at FROM habit WHERE id = ?',
           [habitId],
         );
         if (!habit) throw new NotFoundError(`Hábito ${habitId} não encontrado`);
+        if (habit.archived_at) throw new ValidationError('Hábito arquivado');
         if (habit.goal_type !== 'time') {
           throw new ValidationError('Cronômetro só existe para hábitos de tempo');
         }

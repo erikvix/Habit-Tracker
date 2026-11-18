@@ -11,6 +11,7 @@ import {
   emptyTaskForm,
   formatMinute,
   groupOpenTasks,
+  pastDueToKeep,
   resolveDueDate,
   taskToForm,
   toTaskInput,
@@ -78,9 +79,24 @@ describe('modelo de tarefas', () => {
     expect(completedLabel('2026-11-18', TODAY)).toBe('Concluída qua, 18 nov');
   });
 
+  it('prazo no passado: recusado na criação; o prazo original da tarefa atrasada é preservado', () => {
+    const past = { ...emptyTaskForm, title: 'x', due: 'custom' as const, customDate: '2026-11-20' };
+    expect(validateTaskForm(past, TODAY)).toEqual({ due: 'O prazo não pode ser no passado' });
+    // Edição de tarefa já atrasada: mantém a data original…
+    const keep = pastDueToKeep(past, TODAY);
+    expect(keep).toBe('2026-11-20');
+    expect(validateTaskForm(past, TODAY, keep)).toEqual({});
+    // …mas não aceita outra data passada.
+    expect(validateTaskForm({ ...past, customDate: '2026-11-25' }, TODAY, keep)).toEqual({
+      due: 'O prazo não pode ser no passado',
+    });
+    expect(validateTaskForm({ ...past, customDate: TODAY }, TODAY)).toEqual({});
+    expect(pastDueToKeep({ ...past, customDate: '2026-12-02' }, TODAY)).toBeNull();
+  });
+
   it('formulário: validação, prazo e horário', () => {
-    expect(validateTaskForm(emptyTaskForm)).toEqual({ title: 'Dê um título à tarefa' });
-    expect(validateTaskForm({ ...emptyTaskForm, title: 'x', due: 'custom' })).toEqual({
+    expect(validateTaskForm(emptyTaskForm, TODAY)).toEqual({ title: 'Dê um título à tarefa' });
+    expect(validateTaskForm({ ...emptyTaskForm, title: 'x', due: 'custom' }, TODAY)).toEqual({
       due: 'Escolha uma data',
     });
     expect(resolveDueDate({ ...emptyTaskForm, due: 'tomorrow' }, TODAY)).toBe('2026-12-01');

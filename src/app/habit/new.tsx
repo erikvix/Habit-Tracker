@@ -1,16 +1,18 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { Alert, KeyboardAvoidingView, ScrollView } from 'react-native';
+import { KeyboardAvoidingView, ScrollView } from 'react-native';
 
 import { HabitForm } from '@/features/habit-form/HabitForm';
 import { toHabitInput } from '@/features/habit-form/model';
 import { useCreateHabit } from '@/features/shared/queries';
+import { useDialog } from '@/ui/dialog/DialogProvider';
 import { useTheme } from '@/ui/theme/ThemeProvider';
 import { space } from '@/ui/theme/tokens';
 
 export default function NewHabitScreen() {
   const { colors } = useTheme();
   const create = useCreateHabit();
+  const dialog = useDialog();
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.canvas }} behavior="height">
@@ -27,7 +29,7 @@ export default function NewHabitScreen() {
                 void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 router.back();
               },
-              onError: (e) => Alert.alert('Não foi possível criar', e.message),
+              onError: dialog.showError('Não foi possível criar'),
             })
           }
         />

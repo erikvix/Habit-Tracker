@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 
 import type { TaskRecord } from '@/data/repositories/taskRepo';
 import { Blankslate } from '@/ui/components/Blankslate';
 import { SectionTitle } from '@/ui/components/Counter';
 import { Screen } from '@/ui/components/Screen';
 import { SegmentedControl } from '@/ui/components/SegmentedControl';
+import { useDialog } from '@/ui/dialog/DialogProvider';
 import { space } from '@/ui/theme/tokens';
 
 import { useToday } from '../shared/queries';
@@ -23,6 +24,7 @@ export function TasksScreen() {
   const [tab, setTab] = useState<View_>('open');
   const tasks = useTasks(tab, today);
   const { toggle, busy, actions } = useTaskToggle();
+  const dialog = useDialog();
 
   const open = (t: TaskRecord) => router.push({ pathname: '/task/[id]', params: { id: t.id } });
 
@@ -89,7 +91,7 @@ export function TasksScreen() {
           onAdd={(title) =>
             actions.create.mutate(
               { title },
-              { onError: (e) => Alert.alert('Não foi possível criar', e.message) },
+              { onError: dialog.showError('Não foi possível criar') },
             )
           }
         />

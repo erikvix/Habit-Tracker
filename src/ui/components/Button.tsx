@@ -6,7 +6,8 @@ import { useTheme } from '../theme/ThemeProvider';
 import { fontSize, radius, space } from '../theme/tokens';
 import { AppText } from './AppText';
 
-type Kind = 'default' | 'primary' | 'danger';
+/** danger = texto vermelho (ação secundária); dangerSolid = fundo vermelho (confirmar exclusão). */
+type Kind = 'default' | 'primary' | 'danger' | 'dangerSolid';
 
 interface Props {
   title: string;
@@ -20,9 +21,15 @@ interface Props {
 export function Button({ title, onPress, kind = 'default', icon, disabled }: Props) {
   const { colors } = useTheme();
   const primary = kind === 'primary';
-  const bg = primary ? colors.buttonPrimaryBg : colors.buttonBg;
-  const fg = primary ? colors.buttonPrimaryText : kind === 'danger' ? colors.danger : colors.text;
-  const border = primary ? colors.buttonPrimaryBorder : colors.border;
+  const solidDanger = kind === 'dangerSolid';
+  const bg = primary ? colors.buttonPrimaryBg : solidDanger ? colors.danger : colors.buttonBg;
+  const fg =
+    primary || solidDanger
+      ? colors.buttonPrimaryText
+      : kind === 'danger'
+        ? colors.danger
+        : colors.text;
+  const border = primary || solidDanger ? colors.buttonPrimaryBorder : colors.border;
 
   return (
     <Pressable

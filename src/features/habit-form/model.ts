@@ -56,6 +56,22 @@ export function toHabitInput(v: HabitFormValues) {
   };
 }
 
+/** Preenche o formulário de edição com o hábito e a versão de meta vigente. */
+export function habitToForm(
+  habit: { name: string; description?: string | null; goalType: GoalType },
+  schedule: { dailyTarget: number; activeDays: number } | undefined,
+): HabitFormValues {
+  const mask = schedule?.activeDays ?? ALL_DAYS;
+  return {
+    name: habit.name,
+    description: habit.description ?? '',
+    goalType: habit.goalType,
+    target: schedule?.dailyTarget ?? DEFAULT_TARGET[habit.goalType],
+    everyDay: mask === ALL_DAYS,
+    days: mask === ALL_DAYS ? [1, 2, 3, 4, 5] : weekdaysFromMask(mask),
+  };
+}
+
 /** Ao trocar o tipo, a meta vai para o padrão do novo tipo. */
 export function changeGoalType(v: HabitFormValues, goalType: GoalType): HabitFormValues {
   return { ...v, goalType, target: DEFAULT_TARGET[goalType] };

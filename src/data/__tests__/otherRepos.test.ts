@@ -52,8 +52,10 @@ describe('taskRepo', () => {
   });
 
   it('filtros: hoje, atrasadas, abertas e concluídas', async () => {
-    const { repos } = await setup(at(2026, 11, 18));
+    // A tarefa "atrasada" é criada no dia 05 com prazo dia 10; hoje é dia 18.
+    const { repos, clock } = await setup(at(2026, 11, 5));
     const late = await repos.tasks.create({ title: 'atrasada', dueDate: '2026-11-10' });
+    clock.set(at(2026, 11, 18));
     const today = await repos.tasks.create({
       title: 'hoje',
       dueDate: '2026-11-18',
@@ -69,6 +71,21 @@ describe('taskRepo', () => {
     expect(await ids('overdue')).toEqual([late.id]);
     expect(await ids('open')).toEqual([late.id, today.id, free.id]);
     expect(await ids('done')).toEqual([done.id]);
+  });
+
+  it('criar com prazo no passado é recusado; editar tarefa já atrasada é permitido', async () => {
+    const { repos, clock } = await setup(at(2026, 11, 5));
+    const t = await repos.tasks.create({ title: 'boleto', dueDate: '2026-11-10' });
+    clock.set(at(2026, 11, 18));
+    await expect(repos.tasks.create({ title: 'x', dueDate: '2026-11-17' })).rejects.toThrow(
+      'passado',
+    );
+    await expect(repos.tasks.create({ title: 'x', dueDate: '2026-11-18' })).resolves.toBeTruthy();
+    await repos.tasks.update(t.id, { title: 'boleto do condomínio' });
+    expect(await repos.tasks.get(t.id)).toMatchObject({
+      title: 'boleto do condomínio',
+      dueDate: '2026-11-10',
+    });
   });
 
   it('valida título e horário sem data; remover a data remove o horário', async () => {

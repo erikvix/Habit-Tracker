@@ -49,12 +49,20 @@ function normalizeValue(goalType: GoalType, value: number): number {
 export function createCommitRepo(ctx: RepoContext, settings: SettingsRepo) {
   const { db, clock, newId } = ctx;
 
+  /**
+   * Dados do hábito para uma escrita. Hábito arquivado é só leitura (métricas congeladas):
+   * qualquer alteração de commit exige desarquivar antes.
+   */
   async function habitInfo(exec: SqlExecutor, habitId: string) {
-    const h = await exec.get<{ goal_type: GoalType; start_date: string }>(
-      'SELECT goal_type, start_date FROM habit WHERE id = ?',
-      [habitId],
-    );
+    const h = await exec.get<{
+      goal_type: GoalType;
+      start_date: string;
+      archived_at: string | null;
+    }>('SELECT goal_type, start_date, archived_at FROM habit WHERE id = ?', [habitId]);
     if (!h) throw new NotFoundError(`Hábito ${habitId} não encontrado`);
+    if (h.archived_at) {
+      throw new ValidationError('Hábito arquivado: desarquive para alterar o histórico');
+    }
     return h;
   }
 
@@ -143,6 +151,7 @@ export function createCommitRepo(ctx: RepoContext, settings: SettingsRepo) {
     /** Desfaz o commit mais recente do dia (o "−1"). @returns false se não havia commit. */
     async removeLast(habitId: string, date?: LocalDate): Promise<boolean> {
       return db.transaction(async (tx) => {
+        await habitInfo(tx, habitId);
         const day = date ?? (await settings.today(tx));
         const r = await tx.run(
           `DELETE FROM commit_entry WHERE id = (
@@ -181,8 +190,15 @@ export function createCommitRepo(ctx: RepoContext, settings: SettingsRepo) {
     },
 
     async remove(id: string): Promise<void> {
-      const r = await db.run('DELETE FROM commit_entry WHERE id = ?', [id]);
-      if (r.changes === 0) throw new NotFoundError(`Commit ${id} não encontrado`);
+      await db.transaction(async (tx) => {
+        const row = await tx.get<{ habit_id: string }>(
+          'SELECT habit_id FROM commit_entry WHERE id = ?',
+          [id],
+        );
+        if (!row) throw new NotFoundError(`Commit ${id} não encontrado`);
+        await habitInfo(tx, row.habit_id);
+        await tx.run('DELETE FROM commit_entry WHERE id = ?', [id]);
+      });
     },
 
     /** Nº de commits por dia (para "total de commits no período"). */

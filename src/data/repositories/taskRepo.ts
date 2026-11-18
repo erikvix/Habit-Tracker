@@ -85,6 +85,10 @@ export function createTaskRepo(ctx: RepoContext, settings: SettingsRepo) {
       const id = newId();
       const now = clock.now().toISOString();
       await db.transaction(async (tx) => {
+        // Nova tarefa não nasce atrasada. (Na edição, um prazo já vencido é preservado.)
+        if (t.dueDate && t.dueDate < (await settings.today(tx))) {
+          throw new ValidationError('O prazo não pode ser no passado');
+        }
         const next = await tx.get<{ n: number }>(
           'SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM task',
         );

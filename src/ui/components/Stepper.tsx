@@ -33,7 +33,8 @@ export function Stepper({ value, onChange, min = 1, max = 1000, step = 1, unit, 
       <TextInput
         accessibilityLabel={label}
         keyboardType="number-pad"
-        value={Number.isFinite(value) && value > 0 ? String(value) : ''}
+        // Campo vazio quando 0 não é um valor válido (ex.: meta); mostra "0" quando é (ex.: hora).
+        value={Number.isFinite(value) && (value > 0 || min === 0) ? String(value) : ''}
         onChangeText={(t) => {
           const n = Number.parseInt(t.replace(/\D/g, ''), 10);
           onChange(Number.isNaN(n) ? 0 : Math.min(n, max));

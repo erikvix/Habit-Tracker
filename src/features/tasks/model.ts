@@ -94,13 +94,31 @@ export function resolveDueDate(v: TaskFormValues, today: LocalDate): LocalDate |
   }
 }
 
-export function validateTaskForm(v: TaskFormValues): TaskFormErrors {
+/**
+ * @param keepPastDate prazo passado que a tarefa já tinha (edição de tarefa atrasada):
+ *   continua aceito, mas não dá para escolher *outra* data passada.
+ */
+export function validateTaskForm(
+  v: TaskFormValues,
+  today: LocalDate,
+  keepPastDate: LocalDate | null = null,
+): TaskFormErrors {
   const e: TaskFormErrors = {};
   const title = v.title.trim();
   if (!title) e.title = 'Dê um título à tarefa';
   else if (title.length > 200) e.title = 'Máximo de 200 caracteres';
   if (v.due === 'custom' && !v.customDate) e.due = 'Escolha uma data';
+  else if (v.due === 'custom' && v.customDate! < today && v.customDate !== keepPastDate) {
+    e.due = 'O prazo não pode ser no passado';
+  }
   return e;
+}
+
+/** Prazo passado já existente que a edição deve preservar (null se não houver). */
+export function pastDueToKeep(initial: TaskFormValues, today: LocalDate): LocalDate | null {
+  return initial.due === 'custom' && initial.customDate && initial.customDate < today
+    ? initial.customDate
+    : null;
 }
 
 export function toTaskInput(v: TaskFormValues, today: LocalDate): TaskInput {

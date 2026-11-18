@@ -5,6 +5,7 @@ import * as SystemUI from 'expo-system-ui';
 import { useEffect, useMemo, useState } from 'react';
 
 import { DatabaseProvider } from '@/data/DatabaseProvider';
+import { DialogProvider } from '@/ui/dialog/DialogProvider';
 import { AppThemeProvider, useTheme } from '@/ui/theme/ThemeProvider';
 
 function RootNavigator() {
@@ -46,6 +47,14 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="habit/new" options={{ title: 'Novo hábito', presentation: 'modal' }} />
         <Stack.Screen name="habit/[id]" options={{ title: '' }} />
+        <Stack.Screen
+          name="habit/edit/[id]"
+          options={{ title: 'Editar hábito', presentation: 'modal' }}
+        />
+        <Stack.Screen
+          name="habit/day/[id]/[date]"
+          options={{ title: 'Editar dia', presentation: 'modal' }}
+        />
         <Stack.Screen name="task/new" options={{ title: 'Nova tarefa', presentation: 'modal' }} />
         <Stack.Screen
           name="task/[id]"
@@ -72,7 +81,9 @@ export default function RootLayout() {
     <AppThemeProvider>
       <DatabaseProvider>
         <QueryClientProvider client={queryClient}>
-          <RootNavigator />
+          <DialogProvider>
+            <RootNavigator />
+          </DialogProvider>
         </QueryClientProvider>
       </DatabaseProvider>
     </AppThemeProvider>
