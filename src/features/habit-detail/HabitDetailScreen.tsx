@@ -21,6 +21,7 @@ import { radius, space } from '@/ui/theme/tokens';
 
 import { canEditDay } from '../habit-day/model';
 import { HabitMetrics } from '../metrics/HabitMetrics';
+import { useTimer } from '../timer/useTimer';
 import { useHabitActions } from '../shared/habitQueries';
 import { dayProgressText, formatShortDate } from '../shared/model';
 import { useCommitCounts, useHabitHistory, useSettings, useToday } from '../shared/queries';
@@ -35,6 +36,7 @@ export function HabitDetailScreen({ id }: { id: string }) {
   const weekStart = settings?.weekStart ?? 0;
   const history = useHabitHistory(id);
   const actions = useHabitActions(id);
+  const timer = useTimer();
   const graph = useMemo(
     () => (history.data ? habitGraphData(history.data, today, weekStart) : null),
     [history.data, today, weekStart],
@@ -172,6 +174,24 @@ export function HabitDetailScreen({ id }: { id: string }) {
           />
         ) : null}
       </Card>
+
+      {habit.goalType === 'time' && !archived ? (
+        timer.active?.habitId === habit.id ? (
+          <Button
+            kind="primary"
+            icon="stopwatch"
+            title={`Cronômetro rodando · ${timer.elapsed}`}
+            onPress={() => router.navigate('/')}
+          />
+        ) : (
+          <Button
+            icon="play"
+            title="Iniciar cronômetro"
+            disabled={timer.busy}
+            onPress={() => void timer.start(habit)}
+          />
+        )
+      ) : null}
 
       <HabitMetrics history={history.data} today={today} yearFrom={from} totalCommits={total} />
 

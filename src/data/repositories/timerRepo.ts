@@ -35,11 +35,17 @@ export function createTimerRepo(ctx: RepoContext, settings: SettingsRepo, commit
       return row ? { habitId: row.habit_id, startedAt: row.started_at } : null;
     },
 
-    async listActive(): Promise<ActiveTimer[]> {
-      const rows = await db.all<{ habit_id: string; started_at: string }>(
-        'SELECT * FROM active_timer',
+    /** Cronômetros rodando, com o nome do hábito (para avisos na UI). */
+    async listActive(): Promise<(ActiveTimer & { habitName: string })[]> {
+      const rows = await db.all<{ habit_id: string; started_at: string; name: string }>(
+        `SELECT t.habit_id, t.started_at, h.name FROM active_timer t
+         JOIN habit h ON h.id = t.habit_id ORDER BY t.started_at`,
       );
-      return rows.map((r) => ({ habitId: r.habit_id, startedAt: r.started_at }));
+      return rows.map((r) => ({
+        habitId: r.habit_id,
+        startedAt: r.started_at,
+        habitName: r.name,
+      }));
     },
 
     /** Inicia (idempotente: se já está rodando, devolve o existente). */
@@ -59,6 +65,12 @@ export function createTimerRepo(ctx: RepoContext, settings: SettingsRepo, commit
           [habitId],
         );
         if (existing) return { habitId, startedAt: existing.started_at };
+        // Um cronômetro por vez (decisão de produto): pare o atual antes de iniciar outro.
+        const other = await tx.get<{ habit_id: string }>(
+          'SELECT habit_id FROM active_timer WHERE habit_id <> ? LIMIT 1',
+          [habitId],
+        );
+        if (other) throw new ValidationError('Já existe um cronômetro rodando');
         const startedAt = clock.now().toISOString();
         await tx.run('INSERT INTO active_timer (habit_id, started_at) VALUES (?, ?)', [
           habitId,
@@ -68,7 +80,17 @@ export function createTimerRepo(ctx: RepoContext, settings: SettingsRepo, commit
       });
     },
 
-    async stop(habitId: string): Promise<StopResult> {
+    /**
+     * Para e registra. `minutesOverride` permite corrigir a duração antes de salvar
+     * (ex.: cronômetro esquecido rodando); sem ele, usa o tempo decorrido.
+     */
+    async stop(habitId: string, minutesOverride?: number): Promise<StopResult> {
+      if (
+        minutesOverride !== undefined &&
+        (!Number.isInteger(minutesOverride) || minutesOverride < 1 || minutesOverride > 1440)
+      ) {
+        throw new ValidationError('Minutos devem ser um inteiro entre 1 e 1440');
+      }
       return db.transaction(async (tx) => {
         const row = await tx.get<{ started_at: string }>(
           'SELECT started_at FROM active_timer WHERE habit_id = ?',
@@ -77,7 +99,7 @@ export function createTimerRepo(ctx: RepoContext, settings: SettingsRepo, commit
         if (!row) throw new NotFoundError('Nenhum cronômetro ativo para este hábito');
         await tx.run('DELETE FROM active_timer WHERE habit_id = ?', [habitId]);
 
-        const minutes = elapsedMinutes(row.started_at, clock.now());
+        const minutes = minutesOverride ?? elapsedMinutes(row.started_at, clock.now());
         if (minutes < 1) return { minutes, commit: null };
         const day = await settings.localDateOf(new Date(row.started_at), tx);
         const commit = await commits.insertWith(tx, habitId, day, Math.min(minutes, 1440), 'timer');

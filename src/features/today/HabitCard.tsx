@@ -11,6 +11,14 @@ import { space } from '@/ui/theme/tokens';
 import { progressLabel, progressRatio } from '../shared/model';
 import type { TodayItem } from './model';
 
+/** Cronômetro (só hábitos de tempo). `elapsed` != null ⇒ este card está cronometrando. */
+export interface CardTimer {
+  elapsed: string | null;
+  onStart: () => void;
+  onStop: () => void;
+  onDiscard: () => void;
+}
+
 interface Props {
   item: TodayItem;
   /** value = minutos para hábitos de tempo; ausente = +1. */
@@ -18,17 +26,25 @@ interface Props {
   onUndo: () => void;
   onOpen: () => void;
   busy?: boolean;
+  timer?: CardTimer;
 }
 
 /** Card da tela Hoje: progresso do dia, últimos 7 dias e ações rápidas por tipo. */
-export function HabitCard({ item, onCommit, onUndo, onOpen, busy }: Props) {
+export function HabitCard({ item, onCommit, onUndo, onOpen, busy, timer }: Props) {
   const { colors } = useTheme();
   const { habit } = item.history;
   const { progress, target, level, met } = item.day;
   const name = habit.name;
+  const running = habit.goalType === 'time' && timer?.elapsed != null;
 
   return (
-    <Card style={{ padding: space.md, gap: space.sm }}>
+    <Card
+      style={{
+        padding: space.md,
+        gap: space.sm,
+        borderColor: running ? colors.success : colors.border,
+      }}
+    >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
         <Pressable
           accessibilityRole="button"
@@ -39,9 +55,23 @@ export function HabitCard({ item, onCommit, onUndo, onOpen, busy }: Props) {
           <AppText variant="heading" numberOfLines={1} style={{ color: colors.accent }}>
             {name}
           </AppText>
-          <AppText variant="mono" style={{ color: met ? colors.success : colors.textMuted }}>
-            {progressLabel(habit.goalType, progress, target)}
-          </AppText>
+          {running ? (
+            <AppText
+              variant="mono"
+              accessibilityLabel={`Cronometrando ${timer!.elapsed}`}
+              style={{ color: colors.success, fontWeight: '600' }}
+            >
+              ● {timer!.elapsed}
+              <AppText variant="mono" style={{ color: colors.textMuted, fontWeight: '400' }}>
+                {'  '}
+                {progressLabel(habit.goalType, progress, target)}
+              </AppText>
+            </AppText>
+          ) : (
+            <AppText variant="mono" style={{ color: met ? colors.success : colors.textMuted }}>
+              {progressLabel(habit.goalType, progress, target)}
+            </AppText>
+          )}
         </Pressable>
 
         <View style={{ flexDirection: 'row', gap: space.xs }}>
@@ -69,6 +99,23 @@ export function HabitCard({ item, onCommit, onUndo, onOpen, busy }: Props) {
                 onPress={() => onCommit()}
               />
             </>
+          ) : running ? (
+            <>
+              <IconButton
+                icon="x"
+                kind="invisible"
+                accessibilityLabel={`Descartar cronômetro de ${name}`}
+                disabled={busy}
+                onPress={timer!.onDiscard}
+              />
+              <IconButton
+                icon="square-fill"
+                kind="primary"
+                accessibilityLabel={`Parar cronômetro de ${name}`}
+                disabled={busy}
+                onPress={timer!.onStop}
+              />
+            </>
           ) : (
             <>
               <IconButton
@@ -85,11 +132,19 @@ export function HabitCard({ item, onCommit, onUndo, onOpen, busy }: Props) {
               />
               <IconButton
                 text="+15"
-                kind="primary"
                 accessibilityLabel={`Adicionar 15 minutos a ${name}`}
                 disabled={busy}
                 onPress={() => onCommit(15)}
               />
+              {timer ? (
+                <IconButton
+                  icon="play"
+                  kind="primary"
+                  accessibilityLabel={`Iniciar cronômetro de ${name}`}
+                  disabled={busy}
+                  onPress={timer.onStart}
+                />
+              ) : null}
             </>
           )}
         </View>

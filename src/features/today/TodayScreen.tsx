@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { createHabitEvaluator } from '@/domain/habitDay';
 import { isGoalMet } from '@/domain/level';
 import { AppText } from '@/ui/components/AppText';
 import { Blankslate } from '@/ui/components/Blankslate';
@@ -17,6 +18,7 @@ import { space } from '@/ui/theme/tokens';
 
 import { formatShortDate } from '../shared/model';
 import { TodayTasks } from '../tasks/TodayTasks';
+import { useTimer } from '../timer/useTimer';
 import { useBoard, useCommitActions, useToday } from '../shared/queries';
 import { HabitCard } from './HabitCard';
 import { buildTodayList, todaySummary, type TodayItem } from './model';
@@ -30,6 +32,14 @@ export function TodayScreen() {
   const { commit, undo } = useCommitActions();
   const showError = useDialog().showError('Não foi possível salvar');
   const [showOther, setShowOther] = useState(false);
+  const timer = useTimer({
+    reachesGoal: (habitId, minutes) => {
+      const h = board.data?.find((x) => x.habit.id === habitId);
+      if (!h) return false;
+      const day = createHabitEvaluator(h)(today);
+      return !day.met && isGoalMet(day.progress + minutes, day.target ?? 1, 'time');
+    },
+  });
 
   if (board.isPending) return <Screen>{null}</Screen>;
   if (board.isError) {
@@ -70,7 +80,17 @@ export function TodayScreen() {
     <HabitCard
       key={item.history.habit.id}
       item={item}
-      busy={busy}
+      busy={busy || timer.busy}
+      timer={
+        item.history.habit.goalType === 'time'
+          ? {
+              elapsed: timer.active?.habitId === item.history.habit.id ? timer.elapsed : null,
+              onStart: () => void timer.start(item.history.habit),
+              onStop: timer.requestStop,
+              onDiscard: () => void timer.discard(),
+            }
+          : undefined
+      }
       onCommit={(v) => onCommit(item, v)}
       onUndo={() => onUndo(item)}
       onOpen={() => router.push({ pathname: '/habit/[id]', params: { id: item.history.habit.id } })}
@@ -119,6 +139,7 @@ export function TodayScreen() {
       )}
 
       <TodayTasks today={today} />
+      {timer.sheet}
 
       {list.other.length > 0 ? (
         <View style={{ gap: space.md }}>
