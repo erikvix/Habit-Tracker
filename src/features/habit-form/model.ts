@@ -8,6 +8,8 @@ export interface HabitFormValues {
   target: number;
   everyDay: boolean;
   days: Weekday[];
+  /** Horários de lembrete (minuto do dia), ordenados e sem repetição. */
+  reminders: number[];
 }
 
 export type HabitFormErrors = Partial<Record<'name' | 'target' | 'days', string>>;
@@ -22,6 +24,7 @@ export const emptyHabitForm: HabitFormValues = {
   target: DEFAULT_TARGET.binary,
   everyDay: true,
   days: [1, 2, 3, 4, 5],
+  reminders: [],
 };
 
 /** Mesmas regras do repositório, com mensagens para exibir no campo. */
@@ -60,6 +63,7 @@ export function toHabitInput(v: HabitFormValues) {
 export function habitToForm(
   habit: { name: string; description?: string | null; goalType: GoalType },
   schedule: { dailyTarget: number; activeDays: number } | undefined,
+  reminders: number[] = [],
 ): HabitFormValues {
   const mask = schedule?.activeDays ?? ALL_DAYS;
   return {
@@ -69,6 +73,7 @@ export function habitToForm(
     target: schedule?.dailyTarget ?? DEFAULT_TARGET[habit.goalType],
     everyDay: mask === ALL_DAYS,
     days: mask === ALL_DAYS ? [1, 2, 3, 4, 5] : weekdaysFromMask(mask),
+    reminders: normalizeReminders(reminders),
   };
 }
 
@@ -97,3 +102,11 @@ export function describeDays(mask: number): string {
   if (mask === maskFromWeekdays([0, 6])) return 'fins de semana';
   return days.map((d) => SHORT[d]).join(', ');
 }
+
+/** Ordena e remove repetidos. */
+export function normalizeReminders(minutes: number[]): number[] {
+  return [...new Set(minutes)].sort((a, b) => a - b);
+}
+
+/** Máximo de horários por hábito (o Android limita alarmes por app). */
+export const MAX_REMINDERS = 5;

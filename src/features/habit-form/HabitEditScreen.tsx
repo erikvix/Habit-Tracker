@@ -8,6 +8,7 @@ import { useTheme } from '@/ui/theme/ThemeProvider';
 import { space } from '@/ui/theme/tokens';
 
 import { useHabitActions, useHabitWithSchedules } from '../shared/habitQueries';
+import { ensurePermission } from '../notifications/service';
 import { useToday } from '../shared/queries';
 import { HabitForm } from './HabitForm';
 import { habitToForm, toHabitInput } from './model';
@@ -38,13 +39,14 @@ export function HabitEditScreen({ id }: { id: string }) {
   }
   if (!data.data) return wrap(null);
 
-  const { habit, schedules } = data.data;
+  const { habit, schedules, reminders } = data.data;
   const current = createScheduleResolver(schedules)(today) ?? schedules.at(-1);
 
   return wrap(
     <HabitForm
       key={habit.id}
-      initial={habitToForm(habit, current)}
+      initial={habitToForm(habit, current, reminders)}
+      requestPermission={ensurePermission}
       lockGoalType
       notice={SCHEDULE_NOTICE}
       submitLabel="Salvar alterações"
@@ -57,6 +59,7 @@ export function HabitEditScreen({ id }: { id: string }) {
             description: input.description,
             dailyTarget: input.dailyTarget,
             activeDays: input.activeDays,
+            reminders: values.reminders,
           },
           {
             onSuccess: () => router.back(),

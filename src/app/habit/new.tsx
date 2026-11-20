@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { KeyboardAvoidingView, ScrollView } from 'react-native';
 
 import { HabitForm } from '@/features/habit-form/HabitForm';
+import { ensurePermission } from '@/features/notifications/service';
 import { toHabitInput } from '@/features/habit-form/model';
 import { useCreateHabit } from '@/features/shared/queries';
 import { useDialog } from '@/ui/dialog/DialogProvider';
@@ -23,14 +24,18 @@ export default function NewHabitScreen() {
         <HabitForm
           submitLabel="Criar hábito"
           submitting={create.isPending}
+          requestPermission={ensurePermission}
           onSubmit={(values) =>
-            create.mutate(toHabitInput(values), {
-              onSuccess: () => {
-                void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                router.back();
+            create.mutate(
+              { input: toHabitInput(values), reminders: values.reminders },
+              {
+                onSuccess: () => {
+                  void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  router.back();
+                },
+                onError: dialog.showError('Não foi possível criar'),
               },
-              onError: dialog.showError('Não foi possível criar'),
-            })
+            )
           }
         />
       </ScrollView>

@@ -59,3 +59,5 @@ png(svg({ scale: 0.56 }), 1024, 'assets/images/android-icon-foreground.png');
 png(svg({ scale: 0.56, mono: true }), 1024, 'assets/images/android-icon-monochrome.png');
 png(svg(), 1024, 'assets/images/splash-icon.png');
 png(favicon, 48, 'assets/images/favicon.png');
+// Ícone pequeno da notificação (Android): branco sobre transparente, 96px.
+png(svg({ scale: 1.1, strokeBoost: 2, mono: true }), 96, 'assets/images/notification-icon.png');

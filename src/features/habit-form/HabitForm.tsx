@@ -1,5 +1,6 @@
+import Octicons from '@expo/vector-icons/Octicons';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import type { GoalType } from '@/domain/types';
 import { AppText } from '@/ui/components/AppText';
@@ -8,15 +9,19 @@ import { Card } from '@/ui/components/Card';
 import { SegmentedControl } from '@/ui/components/SegmentedControl';
 import { Stepper } from '@/ui/components/Stepper';
 import { TextField } from '@/ui/components/TextField';
+import { TimePickerSheet } from '@/ui/components/TimePickerSheet';
 import { WeekdayPicker } from '@/ui/components/WeekdayPicker';
 import { useTheme } from '@/ui/theme/ThemeProvider';
 import { space } from '@/ui/theme/tokens';
 
 import { unitLabel } from '../shared/model';
+import { formatMinute } from '../tasks/model';
 import {
   changeGoalType,
   emptyHabitForm,
+  MAX_REMINDERS,
   MAX_TARGET,
+  normalizeReminders,
   validateHabitForm,
   type HabitFormErrors,
   type HabitFormValues,
@@ -43,6 +48,8 @@ interface Props {
   lockGoalType?: boolean;
   /** Aviso exibido acima do botão (ex.: mudanças valem a partir de hoje). */
   notice?: string;
+  /** Chamado ao adicionar um lembrete; pede a permissão de notificação. true = concedida. */
+  requestPermission?: () => Promise<boolean>;
 }
 
 export function HabitForm({
@@ -52,16 +59,27 @@ export function HabitForm({
   onSubmit,
   lockGoalType,
   notice,
+  requestPermission,
 }: Props) {
   const { colors } = useTheme();
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState<HabitFormErrors>({});
   const [touched, setTouched] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [blocked, setBlocked] = useState(false);
 
   const update = (next: HabitFormValues) => {
     setValues(next);
     if (touched) setErrors(validateHabitForm(next));
   };
+
+  const addReminder = (minute: number) => {
+    setPicking(false);
+    update({ ...values, reminders: normalizeReminders([...values.reminders, minute]) });
+    void requestPermission?.().then((granted) => setBlocked(!granted));
+  };
+  const removeReminder = (minute: number) =>
+    update({ ...values, reminders: values.reminders.filter((m) => m !== minute) });
 
   const submit = () => {
     setTouched(true);
@@ -158,6 +176,51 @@ export function HabitForm({
           </AppText>
         )}
       </Card>
+
+      <Card style={{ gap: space.md }}>
+        <AppText style={{ fontWeight: '600' }}>Lembretes</AppText>
+        {values.reminders.length > 0 ? (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+            {values.reminders.map((m) => (
+              <Pressable
+                key={m}
+                accessibilityRole="button"
+                accessibilityLabel={`Remover lembrete das ${formatMinute(m)}`}
+                onPress={() => removeReminder(m)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: space.sm,
+                  paddingVertical: space.xs,
+                  paddingHorizontal: space.md,
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.surfaceMuted,
+                }}
+              >
+                <Octicons name="bell" size={14} color={colors.textMuted} />
+                <AppText variant="mono">{formatMinute(m)}</AppText>
+                <Octicons name="x" size={14} color={colors.textMuted} />
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+        {values.reminders.length < MAX_REMINDERS ? (
+          <Button icon="plus" title="Adicionar horário" onPress={() => setPicking(true)} />
+        ) : null}
+        <AppText variant="caption" style={blocked ? { color: colors.attention } : undefined}>
+          {blocked
+            ? 'Notificações bloqueadas no Android. Ative em Ajustes para receber os lembretes.'
+            : 'Só toca nos dias ativos, e não toca se a meta do dia já foi batida.'}
+        </AppText>
+      </Card>
+      <TimePickerSheet
+        visible={picking}
+        value={null}
+        onSelect={addReminder}
+        onClose={() => setPicking(false)}
+      />
 
       {notice ? <AppText variant="caption">{notice}</AppText> : null}
       <Button

@@ -47,7 +47,13 @@ describe('habitToForm', () => {
       target: 8,
       everyDay: true,
       days: [1, 2, 3, 4, 5],
+      reminders: [],
     });
+  });
+
+  it('lembretes vêm ordenados e sem repetição', () => {
+    const f = habitToForm({ name: 'x', goalType: 'binary' }, undefined, [1200, 450, 450]);
+    expect(f.reminders).toEqual([450, 1200]);
   });
 
   it('dias específicos viram lista de dias', () => {

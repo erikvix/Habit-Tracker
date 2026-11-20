@@ -26,7 +26,7 @@ function checkMinute(m: number) {
   if (!Number.isInteger(m) || m < 0 || m > 1439) throw new ValidationError('Horário inválido');
 }
 
-/** CRUD de lembretes. O agendamento das notificações fica na fase 7. */
+/** CRUD de lembretes. O agendamento das notificações vive em features/notifications. */
 export function createReminderRepo({ db, newId }: RepoContext) {
   return {
     async listByHabit(habitId: string): Promise<Reminder[]> {
@@ -69,6 +69,21 @@ export function createReminderRepo({ db, newId }: RepoContext) {
 
     async remove(id: string): Promise<void> {
       await db.run('DELETE FROM reminder WHERE id = ?', [id]);
+    },
+
+    /** Substitui os horários do hábito (formulário salva a lista inteira). Duplicados viram um. */
+    async setForHabit(habitId: string, minutes: number[]): Promise<void> {
+      const unique = [...new Set(minutes)].sort((a, b) => a - b);
+      unique.forEach(checkMinute);
+      await db.transaction(async (tx) => {
+        await tx.run('DELETE FROM reminder WHERE habit_id = ?', [habitId]);
+        for (const m of unique) {
+          await tx.run(
+            'INSERT INTO reminder (id, habit_id, minute_of_day, enabled) VALUES (?, ?, ?, 1)',
+            [newId(), habitId, m],
+          );
+        }
+      });
     },
   };
 }

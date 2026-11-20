@@ -5,6 +5,7 @@ import * as SystemUI from 'expo-system-ui';
 import { useEffect, useMemo, useState } from 'react';
 
 import { DatabaseProvider } from '@/data/DatabaseProvider';
+import { NotificationsBridge } from '@/features/notifications/NotificationsBridge';
 import { DialogProvider } from '@/ui/dialog/DialogProvider';
 import { AppThemeProvider, useTheme } from '@/ui/theme/ThemeProvider';
 
@@ -35,6 +36,7 @@ function RootNavigator() {
   return (
     <ThemeProvider value={navTheme}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <NotificationsBridge />
       <Stack
         screenOptions={{
           contentStyle: { backgroundColor: colors.canvas },

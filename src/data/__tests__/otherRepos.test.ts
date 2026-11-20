@@ -194,4 +194,23 @@ describe('reminderRepo', () => {
     await expect(repos.reminders.add(a.id, 1440)).rejects.toThrow('Horário');
     await expect(repos.reminders.update('x', { enabled: true })).rejects.toThrow('não encontrado');
   });
+
+  it('setForHabit substitui a lista, sem duplicados, e é atômico', async () => {
+    const { repos } = await setup();
+    const h = await repos.habits.create({
+      name: 'a',
+      goalType: 'binary',
+      dailyTarget: 1,
+      activeDays: 127,
+    });
+    await repos.reminders.add(h.id, 100);
+    await repos.reminders.setForHabit(h.id, [1200, 450, 450]);
+    expect((await repos.reminders.listByHabit(h.id)).map((r) => r.minuteOfDay)).toEqual([
+      450, 1200,
+    ]);
+    await expect(repos.reminders.setForHabit(h.id, [60, 2000])).rejects.toThrow('Horário');
+    expect(await repos.reminders.listByHabit(h.id)).toHaveLength(2);
+    await repos.reminders.setForHabit(h.id, []);
+    expect(await repos.reminders.listByHabit(h.id)).toHaveLength(0);
+  });
 });

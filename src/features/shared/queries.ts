@@ -108,7 +108,11 @@ export function useCreateHabit() {
   const repos = useRepositories();
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (input: HabitInput) => repos.habits.create(input),
+    mutationFn: async ({ input, reminders = [] }: { input: HabitInput; reminders?: number[] }) => {
+      const habit = await repos.habits.create(input);
+      if (reminders.length > 0) await repos.reminders.setForHabit(habit.id, reminders);
+      return habit;
+    },
     onSuccess: () => invalidateUserData(client),
   });
 }

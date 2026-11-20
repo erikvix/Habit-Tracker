@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 
 import { useDatabase } from '@/data/DatabaseProvider';
+import { NotificationSettings } from '@/features/notifications/NotificationSettings';
 import { AppText } from '@/ui/components/AppText';
 import { Card } from '@/ui/components/Card';
 import { LevelLegend } from '@/ui/components/LevelLegend';
@@ -37,6 +38,7 @@ export default function SettingsScreen() {
         <ThemeSegmented />
         <LevelLegend />
       </Card>
+      <NotificationSettings />
       <Card style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
         <Logo size={40} />
         <View>

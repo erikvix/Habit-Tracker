@@ -13,6 +13,7 @@ export function useHabitWithSchedules(id: string) {
     queryFn: async () => ({
       habit: await repos.habits.get(id),
       schedules: await repos.habits.schedules(id),
+      reminders: (await repos.reminders.listByHabit(id)).map((r) => r.minuteOfDay),
     }),
   });
 }
@@ -60,8 +61,10 @@ export function useHabitActions(id: string) {
         description: string | null;
         dailyTarget: number;
         activeDays: number;
+        reminders: number[];
       }) => {
         await repos.habits.update(id, { name: input.name, description: input.description });
+        await repos.reminders.setForHabit(id, input.reminders);
         return repos.habits.setSchedule(id, {
           dailyTarget: input.dailyTarget,
           activeDays: input.activeDays,
