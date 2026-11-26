@@ -163,14 +163,22 @@ Arquivos em `src/features/notifications/`:
   - `development`: dev client, APK de distribuição interna;
   - `preview`: APK standalone;
   - `production`.
-- O aviso de que `cli.appVersionSource` vai ser obrigatório ainda não foi resolvido.
+- `cli.appVersionSource: "local"` no `eas.json`: a versão sai do `app.json` (e, no CI, das variáveis abaixo).
 - O APK de desenvolvimento já está instalado no celular. Só é preciso refazê-lo ao adicionar uma biblioteca **nativa**; mudança de JS só precisa de `npm start`.
   - Build: `npx eas-cli@latest build --profile development --platform android` (exige `npx eas-cli@latest login`).
 - **Combinado:** APK de release só quando estiver estável.
-- **Release pelo GitHub, ainda não feito.** Opções levantadas:
-  - (A) workflow que chama `eas build --profile preview` e anexa o APK a uma GitHub Release, disparado por tag `v*`, com o secret `EXPO_TOKEN` (recomendada);
-  - (B) build com Gradle no runner, com a keystore como secret.
-  - Também pendente: separar o pacote do APK de desenvolvimento (ex.: `dev.local.todotracker.dev`), para não sobrescrever o app de release.
+- **Release pelo GitHub: opção B (Gradle no runner)**, escolhida pelo usuário em vez do EAS.
+  - `.github/workflows/release.yml`:
+    - tag `v*` → compila e cria a GitHub Release com `todo-tracker-vX.Y.Z.apk`;
+    - `workflow_dispatch` → só compila, APK como artefato do run (14 dias).
+    - Passos: `npm ci` → lint/tsc/jest (`--testTimeout=30000`: cache frio estoura os 5 s) → JDK 17 → `expo prebuild --clean` → keystore dos secrets → `./gradlew assembleRelease` → `apksigner verify` (falha se for a chave de debug) → release via `gh`.
+    - Versão: `versionName` = tag sem `v` (manual: `<app.json>-ci.<run>`); `versionCode` = `github.run_number`.
+  - `plugins/withReleaseSigning.js` (config plugin, porque `android/` é gerado):
+    - assina o release com a keystore se `ANDROID_KEYSTORE_PATH` existir; sem ela, fica a chave de debug do template (local/EAS inalterados);
+    - `APP_VERSION_NAME` / `APP_VERSION_CODE` sobrepõem `version` / `android.versionCode`.
+  - Secrets do repositório (criados pelo usuário): `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. A keystore é a mesma baixada da Expo (`eas credentials`); outra chave impede instalar por cima e perder os dados não tem volta (não há importação).
+  - **Ainda não rodou no GitHub** (depende de push autorizado). Validar: disparo manual verde → tag → instalar por cima do app atual.
+  - Pendente: separar o pacote do APK de desenvolvimento (ex.: `dev.local.todotracker.dev`). Hoje dev e release têm o mesmo pacote e a mesma chave, então o APK de release substitui o dev client.
 
 ## 4b. Fase 8: backup e ajustes
 
@@ -187,7 +195,7 @@ Arquivos em `src/features/notifications/`:
 
 ## 5. Pendências
 
-1. Release pelo GitHub (§4): o usuário ainda decide entre A e B e se separa o pacote do APK de desenvolvimento.
+1. Release pelo GitHub (§4): workflow pronto e commitado localmente; falta push, disparo manual de teste, primeira tag (proposta `v1.0.0`) e validar a instalação por cima. Decidir se separa o pacote do APK de desenvolvimento.
 
 ## 6. Regras de trabalho com o usuário
 
