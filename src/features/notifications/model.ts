@@ -31,7 +31,8 @@ export interface PlannedNotification {
 
 export interface PlanInput {
   now: Date;
-  rolloverHour: number;
+  /** Hora da virada do dia; o app usa meia-noite (0). */
+  rolloverHour?: number;
   /** Hábitos não arquivados; o progresso precisa incluir o dia de hoje. */
   habits: { history: HabitHistory; reminders: number[] }[];
   /** Tarefas abertas. */
@@ -43,7 +44,7 @@ export interface PlanInput {
  * Instante em que o minuto `minute` do dia lógico `date` acontece. Com virada às 4h,
  * um lembrete às 01:00 do dia lógico D toca no dia de calendário D+1.
  */
-export function instantOf(date: LocalDate, minute: number, rolloverHour: number): Date {
+export function instantOf(date: LocalDate, minute: number, rolloverHour = 0): Date {
   const calendar = minute < rolloverHour * 60 ? addDays(date, 1) : date;
   const [y, m, d] = calendar.split('-').map(Number) as [number, number, number];
   return new Date(y, m - 1, d, Math.floor(minute / 60), minute % 60);
@@ -64,7 +65,7 @@ function habitBody(
  * - tarefas: no prazo com horário, se ainda for futuro.
  */
 export function planNotifications(input: PlanInput): PlannedNotification[] {
-  const { now, rolloverHour } = input;
+  const { now, rolloverHour = 0 } = input;
   const horizon = input.horizonDays ?? HORIZON_DAYS;
   const nowMs = now.getTime();
   const today = toLocalDate(now, rolloverHour);
@@ -152,7 +153,7 @@ export function parseData(raw: unknown): NotificationData | null {
 }
 
 /** Quando um agendamento do app dispara, lido do próprio id (`tipo:id:data:minuto`). */
-export function scheduledAt(id: string, rolloverHour: number): number | null {
+export function scheduledAt(id: string, rolloverHour = 0): number | null {
   const m = /^(?:habit|task):.+:(\d{4}-\d{2}-\d{2}):(\d{1,4})$/.exec(id);
   if (!m) return null;
   return instantOf(m[1]!, Number(m[2]), rolloverHour).getTime();

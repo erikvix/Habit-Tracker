@@ -19,11 +19,10 @@ describe('commitRepo.add', () => {
     expect(c.tzOffsetMin).toBe(-at(2026, 11, 18).getTimezoneOffset());
   });
 
-  it('01:30 com virada às 4h cai no dia anterior', async () => {
+  it('o dia é o do relógio: 00:30 já conta como o dia novo', async () => {
     const { repos, habit, clock } = await withHabit('count', at(2026, 11, 17, 10));
-    await repos.settings.set('rolloverHour', 4);
-    clock.set(at(2026, 11, 18, 1, 30));
-    expect((await repos.commits.add(habit.id)).localDate).toBe('2026-11-17');
+    clock.set(at(2026, 11, 18, 0, 30));
+    expect((await repos.commits.add(habit.id)).localDate).toBe('2026-11-18');
   });
 
   it('binário: no máximo 1 commit por dia', async () => {

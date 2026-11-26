@@ -128,7 +128,7 @@ export function createCommitRepo(ctx: RepoContext, settings: SettingsRepo) {
       { value = 1, source = 'quick' }: { value?: number; source?: CommitSource } = {},
     ): Promise<CommitRecord> {
       return db.transaction(async (tx) => {
-        const today = await settings.today(tx);
+        const today = await settings.today();
         return insert(tx, habitId, today, value, source);
       });
     },
@@ -142,7 +142,7 @@ export function createCommitRepo(ctx: RepoContext, settings: SettingsRepo) {
     ): Promise<CommitRecord> {
       if (!isValidLocalDate(date)) throw new ValidationError(`Data inválida: ${date}`);
       return db.transaction(async (tx) => {
-        const today = await settings.today(tx);
+        const today = await settings.today();
         if (date > today) throw new ValidationError('Não é possível commitar no futuro');
         return insert(tx, habitId, date, value, source);
       });
@@ -152,7 +152,7 @@ export function createCommitRepo(ctx: RepoContext, settings: SettingsRepo) {
     async removeLast(habitId: string, date?: LocalDate): Promise<boolean> {
       return db.transaction(async (tx) => {
         await habitInfo(tx, habitId);
-        const day = date ?? (await settings.today(tx));
+        const day = date ?? (await settings.today());
         const r = await tx.run(
           `DELETE FROM commit_entry WHERE id = (
              SELECT id FROM commit_entry WHERE habit_id = ? AND local_date = ?

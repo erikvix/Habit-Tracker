@@ -1,4 +1,5 @@
 import type { RepoContext } from '../context';
+import { createBackupRepo } from './backupRepo';
 import { createCommitRepo } from './commitRepo';
 import { createHabitRepo } from './habitRepo';
 import { createReminderRepo } from './reminderRepo';
@@ -16,6 +17,7 @@ export function createRepositories(ctx: RepoContext) {
     tasks: createTaskRepo(ctx, settings),
     timers: createTimerRepo(ctx, settings, commits),
     reminders: createReminderRepo(ctx),
+    backup: createBackupRepo(ctx),
   };
 }
 

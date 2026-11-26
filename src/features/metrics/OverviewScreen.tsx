@@ -18,7 +18,7 @@ import { useTheme } from '@/ui/theme/ThemeProvider';
 import { fonts, radius, space } from '@/ui/theme/tokens';
 
 import { formatShortDate } from '../shared/model';
-import { useSettings, useToday } from '../shared/queries';
+import { useToday } from '../shared/queries';
 import {
   efficiencyLevel,
   minSelectableMonth,
@@ -32,16 +32,14 @@ import { useOverview } from './queries';
 export function OverviewScreen() {
   const { colors } = useTheme();
   const today = useToday();
-  const { data: settings } = useSettings();
-  const weekStart = settings?.weekStart ?? 0;
-  const data = useOverview(today, weekStart);
+  const data = useOverview(today);
   const current = monthKey(today);
   const [month, setMonth] = useState<MonthKey>(current);
   const [selected, setSelected] = useState<LocalDate | null>(null);
 
   const overview = useMemo(
-    () => (data.data ? overviewData(data.data.histories, data.data.tasks, today, weekStart) : null),
-    [data.data, today, weekStart],
+    () => (data.data ? overviewData(data.data.histories, data.data.tasks, today) : null),
+    [data.data, today],
   );
   const ranking = useMemo(
     () => (data.data ? rankingFor(data.data.histories, month, today) : []),
@@ -81,7 +79,6 @@ export function OverviewScreen() {
         <ContributionGraph
           weeks={overview.weeks}
           monthLabels={overview.monthLabels}
-          weekStart={weekStart}
           selected={selected}
           onPressDay={(d) => setSelected((cur) => (cur === d ? null : d))}
         />

@@ -22,11 +22,7 @@ export function suggestedMinutes(startedAt: string, now: Date): number {
  * Se a sessão atravessou a virada do dia, devolve o dia em que começou
  * (é nele que os minutos são registrados). Senão, null.
  */
-export function crossedDayStart(
-  startedAt: string,
-  now: Date,
-  rolloverHour: number,
-): LocalDate | null {
+export function crossedDayStart(startedAt: string, now: Date, rolloverHour = 0): LocalDate | null {
   const startDay = toLocalDate(new Date(startedAt), rolloverHour);
   return startDay !== toLocalDate(now, rolloverHour) ? startDay : null;
 }

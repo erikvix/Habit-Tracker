@@ -61,9 +61,8 @@ export async function ensurePermission(): Promise<boolean> {
 
 async function doSync(repos: Repositories): Promise<void> {
   if ((await getPermission()) !== 'granted') return;
-  const settings = await repos.settings.getAll();
   const now = new Date();
-  const today = toLocalDate(now, settings.rolloverHour);
+  const today = toLocalDate(now);
 
   const reminders = await repos.reminders.listEnabled();
   const byHabit = new Map<string, number[]>();
@@ -75,7 +74,6 @@ async function doSync(repos: Repositories): Promise<void> {
 
   const planned = planNotifications({
     now,
-    rolloverHour: settings.rolloverHour,
     habits: histories
       .filter((h) => byHabit.has(h.habit.id))
       .map((history) => ({ history, reminders: byHabit.get(history.habit.id)! })),
@@ -143,12 +141,12 @@ export interface ScheduledItem {
 }
 
 /** Próximos lembretes do app no sistema, em ordem de disparo (diagnóstico em Ajustes). */
-export async function listScheduled(rolloverHour: number): Promise<ScheduledItem[]> {
+export async function listScheduled(): Promise<ScheduledItem[]> {
   const all = await Notifications.getAllScheduledNotificationsAsync();
   return all
     .map((n) => ({
       id: n.identifier,
-      at: scheduledAt(n.identifier, rolloverHour),
+      at: scheduledAt(n.identifier),
       title: n.content.title ?? '',
     }))
     .filter((n): n is ScheduledItem => n.at !== null)

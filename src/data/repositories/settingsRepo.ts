@@ -1,5 +1,5 @@
 import { toLocalDate } from '@/domain/localDate';
-import type { LocalDate, Weekday } from '@/domain/types';
+import type { LocalDate } from '@/domain/types';
 import type { ThemePreference } from '@/ui/theme/tokens';
 
 import { ValidationError, type RepoContext } from '../context';
@@ -7,19 +7,17 @@ import type { SqlExecutor } from '../driver';
 
 export interface Settings {
   theme: ThemePreference;
-  /** 0 = domingo (padrão GitHub), 1 = segunda. */
-  weekStart: Extract<Weekday, 0 | 1>;
-  /** Hora (0–23) em que o dia lógico vira. 0 = meia-noite. */
-  rolloverHour: number;
 }
 
-export const defaultSettings: Settings = { theme: 'dark', weekStart: 0, rolloverHour: 0 };
+export const defaultSettings: Settings = { theme: 'dark' };
+
+/*
+ * O dia é o do relógio do celular (vira à meia-noite) e a semana começa no domingo.
+ * Chaves antigas (weekStart, rolloverHour) que existam no banco são ignoradas pelo getAll.
+ */
 
 const validators: { [K in keyof Settings]: (v: unknown) => v is Settings[K] } = {
   theme: (v): v is ThemePreference => v === 'system' || v === 'dark' || v === 'light',
-  weekStart: (v): v is 0 | 1 => v === 0 || v === 1,
-  rolloverHour: (v): v is number =>
-    Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 23,
 };
 
 export function createSettingsRepo({ db, clock }: RepoContext) {
@@ -54,15 +52,13 @@ export function createSettingsRepo({ db, clock }: RepoContext) {
       );
     },
 
-    /** Dia lógico atual, já com a hora de virada configurada. */
-    async today(exec: SqlExecutor = db): Promise<LocalDate> {
-      const { rolloverHour } = await getAll(exec);
-      return toLocalDate(clock.now(), rolloverHour);
+    /** Dia atual pelo relógio do celular. */
+    async today(): Promise<LocalDate> {
+      return toLocalDate(clock.now());
     },
 
-    async localDateOf(instant: Date, exec: SqlExecutor = db): Promise<LocalDate> {
-      const { rolloverHour } = await getAll(exec);
-      return toLocalDate(instant, rolloverHour);
+    async localDateOf(instant: Date): Promise<LocalDate> {
+      return toLocalDate(instant);
     },
   };
 }

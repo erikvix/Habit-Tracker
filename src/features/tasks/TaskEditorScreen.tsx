@@ -7,7 +7,7 @@ import { useDialog } from '@/ui/dialog/DialogProvider';
 import { useTheme } from '@/ui/theme/ThemeProvider';
 import { space } from '@/ui/theme/tokens';
 
-import { useSettings, useToday } from '../shared/queries';
+import { useToday } from '../shared/queries';
 import { taskToForm, toTaskInput } from './model';
 import { useTask, useTaskActions } from './queries';
 import { TaskForm } from './TaskForm';
@@ -18,8 +18,6 @@ export function TaskEditorScreen({ id }: { id?: string }) {
   const today = useToday();
   const task = useTask(id);
   const actions = useTaskActions();
-  const { data: settings } = useSettings();
-  const weekStart = settings?.weekStart ?? 0;
   const dialog = useDialog();
   const onError = dialog.showError('Não foi possível salvar');
 
@@ -39,7 +37,6 @@ export function TaskEditorScreen({ id }: { id?: string }) {
     return wrap(
       <TaskForm
         today={today}
-        weekStart={weekStart}
         submitLabel="Criar tarefa"
         submitting={actions.create.isPending}
         onSubmit={(v) =>
@@ -70,7 +67,6 @@ export function TaskEditorScreen({ id }: { id?: string }) {
     <TaskForm
       key={task.data.id}
       today={today}
-      weekStart={weekStart}
       initial={taskToForm(task.data, today)}
       submitLabel="Salvar"
       submitting={actions.update.isPending}

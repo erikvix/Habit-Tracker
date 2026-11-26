@@ -4,7 +4,7 @@ import { AppState } from 'react-native';
 
 import { useRepositories } from '@/data/DatabaseProvider';
 import type { HabitInput } from '@/data/repositories/habitRepo';
-import { defaultSettings } from '@/data/repositories/settingsRepo';
+import type { Settings } from '@/data/repositories/settingsRepo';
 import { addDays, toLocalDate } from '@/domain/localDate';
 import type { LocalDate } from '@/domain/types';
 
@@ -25,22 +25,34 @@ export function invalidateUserData(client: QueryClient) {
   return client.invalidateQueries({ predicate: (q) => q.queryKey[0] !== 'settings' });
 }
 
+export type SettingUpdate = {
+  [K in keyof Settings]: { key: K; value: Settings[K] };
+}[keyof Settings];
+
+/** Grava um ajuste (hoje só o tema). */
+export function useUpdateSetting() {
+  const repos = useRepositories();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (u: SettingUpdate) => repos.settings.set(u.key, u.value as never),
+    onSuccess: () => client.invalidateQueries({ queryKey: qk.settings }),
+  });
+}
+
 export function useSettings() {
   const repos = useRepositories();
   return useQuery({ queryKey: qk.settings, queryFn: () => repos.settings.getAll() });
 }
 
 /**
- * Dia lógico atual. Recalcula quando o app volta ao primeiro plano e na hora da
- * virada (com o app aberto de um dia para o outro).
+ * Dia atual pelo relógio do celular. Recalcula quando o app volta ao primeiro plano e à
+ * meia-noite (com o app aberto de um dia para o outro).
  */
 export function useToday(): LocalDate {
-  const { data: settings = defaultSettings } = useSettings();
-  const hour = settings.rolloverHour;
-  const [today, setToday] = useState(() => toLocalDate(new Date(), hour));
+  const [today, setToday] = useState(() => toLocalDate(new Date()));
 
   useEffect(() => {
-    const refresh = () => setToday(toLocalDate(new Date(), hour));
+    const refresh = () => setToday(toLocalDate(new Date()));
     refresh();
     let timer: ReturnType<typeof setTimeout>;
     const schedule = () => {
@@ -49,7 +61,7 @@ export function useToday(): LocalDate {
           refresh();
           schedule();
         },
-        msUntilNextRollover(new Date(), hour) + 1000,
+        msUntilNextRollover(new Date(), 0) + 1000,
       );
     };
     schedule();
@@ -60,7 +72,7 @@ export function useToday(): LocalDate {
       clearTimeout(timer);
       sub.remove();
     };
-  }, [hour]);
+  }, []);
 
   return today;
 }

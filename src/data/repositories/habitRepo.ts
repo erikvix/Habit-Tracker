@@ -118,7 +118,7 @@ export function createHabitRepo(ctx: RepoContext, settings: SettingsRepo) {
       const id = newId();
 
       await db.transaction(async (tx) => {
-        const today = await settings.today(tx);
+        const today = await settings.today();
         const next = await tx.get<{ n: number }>(
           'SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM habit',
         );
@@ -174,7 +174,7 @@ export function createHabitRepo(ctx: RepoContext, settings: SettingsRepo) {
         const habit = await getRow(tx, id);
         const target = normalizeTarget(habit.goalType, input.dailyTarget);
         const days = normalizeActiveDays(input.activeDays);
-        const today = await settings.today(tx);
+        const today = await settings.today();
 
         const current = await tx.get<ScheduleRow>(
           `SELECT * FROM habit_schedule WHERE habit_id = ? AND effective_from <= ?

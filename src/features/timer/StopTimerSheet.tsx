@@ -19,7 +19,6 @@ export interface StopRequest {
 interface Props {
   request: StopRequest | null;
   now: Date;
-  rolloverHour: number;
   busy?: boolean;
   onConfirm: (minutes: number) => void;
   onDiscard: () => void;
@@ -38,7 +37,6 @@ export function StopTimerSheet({ request, ...rest }: Props) {
 function StopBody({
   request,
   now,
-  rolloverHour,
   busy,
   onConfirm,
   onDiscard,
@@ -47,7 +45,7 @@ function StopBody({
   // A sugestão é fixada no momento em que o painel abre.
   const [initial] = useState(() => suggestedMinutes(request.startedAt, now));
   const [minutes, setMinutes] = useState(initial);
-  const crossed = crossedDayStart(request.startedAt, now, rolloverHour);
+  const crossed = crossedDayStart(request.startedAt, now);
 
   if (initial < 1) {
     return (

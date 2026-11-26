@@ -63,7 +63,6 @@ describe('StopTimerSheet', () => {
   const props = (now: Date) => ({
     request: { habitId: 'h', habitName: 'Leitura', startedAt },
     now,
-    rolloverHour: 0,
     onConfirm: jest.fn(),
     onDiscard: jest.fn(),
     onClose: jest.fn(),

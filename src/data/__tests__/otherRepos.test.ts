@@ -3,21 +3,29 @@ import { elapsedMinutes } from '../repositories/timerRepo';
 import { at, setup } from './support';
 
 describe('settingsRepo', () => {
-  it('padrões: escuro, domingo, virada à meia-noite', async () => {
+  it('padrão: tema escuro', async () => {
     const { repos } = await setup();
     expect(await repos.settings.getAll()).toEqual(defaultSettings);
-    expect(defaultSettings).toEqual({ theme: 'dark', weekStart: 0, rolloverHour: 0 });
+    expect(defaultSettings).toEqual({ theme: 'dark' });
   });
 
   it('grava, sobrescreve e valida', async () => {
     const { repos } = await setup();
     await repos.settings.set('theme', 'light');
     await repos.settings.set('theme', 'system');
-    await repos.settings.set('rolloverHour', 4);
-    expect(await repos.settings.getAll()).toMatchObject({ theme: 'system', rolloverHour: 4 });
+    expect(await repos.settings.getAll()).toEqual({ theme: 'system' });
     // @ts-expect-error valor fora do tipo
     await expect(repos.settings.set('theme', 'blue')).rejects.toThrow('inválido');
-    await expect(repos.settings.set('rolloverHour', 24)).rejects.toThrow('inválido');
+  });
+
+  it('chaves antigas (semana, virada) são ignoradas', async () => {
+    const { repos, db, clock } = await setup(at(2026, 11, 18, 1, 30));
+    await db.run("INSERT INTO setting (key, value) VALUES ('rolloverHour', '4')");
+    await db.run("INSERT INTO setting (key, value) VALUES ('weekStart', '1')");
+    expect(await repos.settings.getAll()).toEqual(defaultSettings);
+    expect(await repos.settings.today()).toBe('2026-11-18');
+    clock.set(at(2026, 11, 18, 23, 59));
+    expect(await repos.settings.today()).toBe('2026-11-18');
   });
 
   it('valor corrompido no banco cai para o padrão', async () => {

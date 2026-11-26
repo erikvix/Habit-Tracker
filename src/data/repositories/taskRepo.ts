@@ -86,7 +86,7 @@ export function createTaskRepo(ctx: RepoContext, settings: SettingsRepo) {
       const now = clock.now().toISOString();
       await db.transaction(async (tx) => {
         // Nova tarefa não nasce atrasada. (Na edição, um prazo já vencido é preservado.)
-        if (t.dueDate && t.dueDate < (await settings.today(tx))) {
+        if (t.dueDate && t.dueDate < (await settings.today())) {
           throw new ValidationError('O prazo não pode ser no passado');
         }
         const next = await tx.get<{ n: number }>(
@@ -126,7 +126,7 @@ export function createTaskRepo(ctx: RepoContext, settings: SettingsRepo) {
     async complete(id: string): Promise<void> {
       await db.transaction(async (tx) => {
         const now = clock.now();
-        const day = await settings.localDateOf(now, tx);
+        const day = await settings.localDateOf(now);
         const r = await tx.run(
           `UPDATE task SET completed_at = ?, completed_local_date = ?, updated_at = ?
            WHERE id = ? AND completed_at IS NULL`,

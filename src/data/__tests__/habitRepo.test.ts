@@ -27,11 +27,10 @@ describe('habitRepo.create', () => {
     expect((await repos.habits.schedules(h.id))[0]!.dailyTarget).toBe(1);
   });
 
-  it('respeita a hora de virada para o dia de início', async () => {
+  it('dia de início é o do relógio (01:30 já é o dia novo)', async () => {
     const { repos } = await setup(at(2026, 11, 18, 1, 30));
-    await repos.settings.set('rolloverHour', 4);
     const h = await repos.habits.create(water);
-    expect(h.startDate).toBe('2026-11-17');
+    expect(h.startDate).toBe('2026-11-18');
   });
 
   it.each([

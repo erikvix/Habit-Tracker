@@ -1,4 +1,5 @@
 import { randomUUID } from 'expo-crypto';
+import * as SplashScreen from 'expo-splash-screen';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 
@@ -22,9 +23,12 @@ const DatabaseContext = createContext<DatabaseState | null>(null);
 type Status =
   { kind: 'loading' } | { kind: 'ready'; state: DatabaseState } | { kind: 'error'; error: Error };
 
-/** Abre o SQLite e aplica as migrations antes de renderizar as telas. */
+// A splash fica até o banco abrir e o tema salvo ser aplicado (sem piscar o tema errado).
+void SplashScreen.preventAutoHideAsync().catch(() => {});
+
+/** Abre o SQLite, aplica as migrations e o tema salvo antes de renderizar as telas. */
 export function DatabaseProvider({ children }: { children: ReactNode }) {
-  const { colors } = useTheme();
+  const { colors, setPreference } = useTheme();
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
 
   useEffect(() => {
@@ -34,15 +38,21 @@ export function DatabaseProvider({ children }: { children: ReactNode }) {
         const db = await openExpoDriver();
         const schemaVersion = await migrate(db);
         const repos = createRepositories({ db, clock: systemClock, newId: randomUUID });
-        if (!cancelled) setStatus({ kind: 'ready', state: { repos, schemaVersion } });
+        const { theme } = await repos.settings.getAll();
+        if (!cancelled) {
+          setPreference(theme);
+          setStatus({ kind: 'ready', state: { repos, schemaVersion } });
+        }
       } catch (e) {
         if (!cancelled) setStatus({ kind: 'error', error: e as Error });
+      } finally {
+        void SplashScreen.hideAsync().catch(() => {});
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [setPreference]);
 
   if (status.kind === 'loading') {
     return <View style={{ flex: 1, backgroundColor: colors.canvas }} />;

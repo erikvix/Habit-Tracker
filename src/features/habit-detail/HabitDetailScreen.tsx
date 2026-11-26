@@ -24,7 +24,7 @@ import { HabitMetrics } from '../metrics/HabitMetrics';
 import { useTimer } from '../timer/useTimer';
 import { useHabitActions } from '../shared/habitQueries';
 import { dayProgressText, formatShortDate } from '../shared/model';
-import { useCommitCounts, useHabitHistory, useSettings, useToday } from '../shared/queries';
+import { useCommitCounts, useHabitHistory, useToday } from '../shared/queries';
 import { habitGraphData } from './model';
 
 export function HabitDetailScreen({ id }: { id: string }) {
@@ -32,14 +32,12 @@ export function HabitDetailScreen({ id }: { id: string }) {
   const dialog = useDialog();
   const showError = dialog.showError('Não foi possível concluir');
   const today = useToday();
-  const { data: settings } = useSettings();
-  const weekStart = settings?.weekStart ?? 0;
   const history = useHabitHistory(id);
   const actions = useHabitActions(id);
   const timer = useTimer();
   const graph = useMemo(
-    () => (history.data ? habitGraphData(history.data, today, weekStart) : null),
-    [history.data, today, weekStart],
+    () => (history.data ? habitGraphData(history.data, today) : null),
+    [history.data, today],
   );
   const from = graph?.start ?? addDays(today, -370);
   const counts = useCommitCounts(id, from, today);
@@ -138,7 +136,6 @@ export function HabitDetailScreen({ id }: { id: string }) {
         <ContributionGraph
           weeks={graph.weeks}
           monthLabels={graph.monthLabels}
-          weekStart={weekStart}
           selected={selected}
           onPressDay={(d) => setSelected((cur) => (cur === d ? null : d))}
         />

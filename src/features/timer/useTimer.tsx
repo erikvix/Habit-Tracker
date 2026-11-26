@@ -4,10 +4,9 @@ import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { useRepositories } from '@/data/DatabaseProvider';
-import { defaultSettings } from '@/data/repositories/settingsRepo';
 import { useDialog } from '@/ui/dialog/DialogProvider';
 
-import { invalidateUserData, useSettings } from '../shared/queries';
+import { invalidateUserData } from '../shared/queries';
 import { formatElapsed } from './model';
 import { StopTimerSheet, type StopRequest } from './StopTimerSheet';
 
@@ -42,7 +41,6 @@ export function useTimer({ reachesGoal }: Options = {}) {
   const repos = useRepositories();
   const client = useQueryClient();
   const dialog = useDialog();
-  const { data: settings = defaultSettings } = useSettings();
   const showError = dialog.showError('Não foi possível salvar');
   const onSuccess = () => invalidateUserData(client);
 
@@ -108,7 +106,6 @@ export function useTimer({ reachesGoal }: Options = {}) {
     <StopTimerSheet
       request={stopping}
       now={now}
-      rolloverHour={settings.rolloverHour}
       busy={busy}
       onClose={() => setStopping(null)}
       onDiscard={() => {

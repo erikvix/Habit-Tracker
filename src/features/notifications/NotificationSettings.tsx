@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { AppState, Linking, View } from 'react-native';
 
 import { useRepositories } from '@/data/DatabaseProvider';
-import { defaultSettings } from '@/data/repositories/settingsRepo';
 import { toLocalDate } from '@/domain/localDate';
 import { AppText } from '@/ui/components/AppText';
 import { Button } from '@/ui/components/Button';
@@ -12,7 +11,6 @@ import { useTheme } from '@/ui/theme/ThemeProvider';
 import { space } from '@/ui/theme/tokens';
 
 import { formatShortDate } from '../shared/model';
-import { useSettings } from '../shared/queries';
 import {
   ensurePermission,
   getPermission,
@@ -27,7 +25,7 @@ const hhmm = (d: Date) =>
 /** "qua, 19 nov · 16:10" (dia de calendário, não o lógico). */
 const whenLabel = (ms: number) => {
   const d = new Date(ms);
-  return `${formatShortDate(toLocalDate(d, 0))} · ${hhmm(d)}`;
+  return `${formatShortDate(toLocalDate(d))} · ${hhmm(d)}`;
 };
 
 const KEY = ['notificationStatus'] as const;
@@ -43,13 +41,12 @@ export function NotificationSettings() {
   const { colors } = useTheme();
   const repos = useRepositories();
   const client = useQueryClient();
-  const { data: settings = defaultSettings } = useSettings();
   const [testAt, setTestAt] = useState<Date | null>(null);
   const status = useQuery({
-    queryKey: [...KEY, settings.rolloverHour],
+    queryKey: KEY,
     queryFn: async () => ({
       permission: await getPermission(),
-      scheduled: await listScheduled(settings.rolloverHour),
+      scheduled: await listScheduled(),
     }),
   });
 

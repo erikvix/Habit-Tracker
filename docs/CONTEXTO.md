@@ -23,8 +23,7 @@ App Android pessoal de **hábitos + tarefas**, "hábitos como commits", com a id
 - **Decisões do usuário:**
   - só Android;
   - a meta é **versionada**: mudar meta ou dias vale a partir de hoje, e o passado é julgado pela versão da época;
-  - a semana começa no **domingo**;
-  - a hora de virada do dia (`rolloverHour`) é configurável, padrão 00:00;
+  - a semana começa sempre no **domingo** e o dia é o do relógio do celular (vira à meia-noite). Não são configuráveis (decisão de 2026-11-26);
   - só um cronômetro rodando por vez.
 - **Fora do escopo v1:** sincronização na nuvem, iOS, widgets.
 
@@ -101,7 +100,7 @@ npx expo-doctor
 npx expo install <pkg>    # sempre use isto, não npm add
 ```
 
-Antes de dar uma tarefa como pronta, rode typecheck, lint e testes. Na última verificação: 29 suítes, 271 testes passando.
+Antes de dar uma tarefa como pronta, rode typecheck, lint e testes. Na última verificação: 31 suítes, 279 testes passando.
 
 ## 3. Histórico
 
@@ -114,9 +113,10 @@ Antes de dar uma tarefa como pronta, rode typecheck, lint e testes. Na última v
 | cc180d9 | 4: histórico, editar dia, arquivar/excluir, diálogos temáticos |
 | 9503525 | 5: métricas e visão geral |
 | 2779cab | 6: cronômetro para hábitos de tempo |
-| (seguinte) | 7: notificações + EAS (**diagnóstico em aberto**, ver §4) |
+| 17306c9 | 7: notificações + EAS (validado no aparelho em 2026-11-25) |
+| (seguinte) | 8: exportar backup e tema persistido (validado no aparelho em 2026-11-26), ver §4b |
 
-## 4. Fase 7: notificações (estado atual)
+## 4. Fase 7: notificações (concluída)
 
 ### Implementado
 Arquivos em `src/features/notifications/`:
@@ -126,7 +126,7 @@ Arquivos em `src/features/notifications/`:
     - janela de 14 dias, só em dias ativos;
     - pula horário já passado e o dia de hoje se a meta foi batida;
     - ignora hábitos arquivados;
-    - respeita o `rolloverHour`;
+    - dia pelo relógio do celular (meia-noite);
     - tarefas entram no prazo com horário;
     - teto de 400 agendamentos.
   - `reconcile`: diff por id determinístico (`habit:<id>:<data>:<minuto>`, `task:<id>:<data>:<minuto>`) e por `data.sig`.
@@ -149,25 +149,11 @@ Arquivos em `src/features/notifications/`:
   - o botão **Testar notificação (1 min)**.
 - **Formulário do hábito:** seção Lembretes (até 5 horários) usando `reminderRepo.setForHabit`. A permissão é pedida ao adicionar o primeiro horário.
 
-### Problema em aberto
-- **O que o usuário relatou:**
-  - permissão concedida;
-  - 13 notificações agendadas;
-  - um lembrete às 16:10 que **não disparou**, com o app fechado.
-- **Hipótese principal:** 1 hábito com 1 horário deveria gerar 14 agendamentos. Com 13, o **lembrete de hoje não foi agendado**. O plano pula hoje em três casos:
-  - horário já passado no momento da sincronização (o relógio do app anda de 5 em 5 minutos);
-  - meta de hoje já batida;
-  - hoje é dia inativo do hábito.
-- **Outras hipóteses:**
-  - atraso por não usar alarme exato: não declaramos `SCHEDULE_EXACT_ALARM`, então o Android pode atrasar;
-  - fabricante que cancela os alarmes ao forçar a parada do app (Xiaomi, Samsung, Motorola).
-- **Próximo passo:** o usuário testa no aparelho e informa o resultado:
-  1. em Ajustes, ver se as 16:10 de hoje aparecem em "Próximos";
-  2. "Testar notificação" e sair do app com o botão Início, sem forçar parada;
-  3. repetir o teste fechando o app pelos recentes;
-  4. informar a marca e o modelo do celular.
-
-  Com isso, decidir a correção: bug no plano, alarme exato (`delivery: 'alarmClock'` ou permissão) ou orientação sobre a bateria.
+### Validação no aparelho (2026-11-25)
+- Lembretes disparam com o app fechado.
+- **Commitar** pela notificação registra o commit e **Concluir** fecha a tarefa.
+- Ao bater a meta, o lembrete do dia deixa de tocar.
+- Sem alarme exato (`SCHEDULE_EXACT_ALARM`): o Android pode atrasar alguns minutos. Se o atraso incomodar, avaliar `delivery: 'alarmClock'`.
 - **Decisão já tomada:** os botões da notificação abrem o app, porque é o caminho confiável. Rodar a ação sem abrir o app exigiria `expo-task-manager`, que não instalamos.
 
 ### EAS / build
@@ -186,13 +172,22 @@ Arquivos em `src/features/notifications/`:
   - (B) build com Gradle no runner, com a keystore como secret.
   - Também pendente: separar o pacote do APK de desenvolvimento (ex.: `dev.local.todotracker.dev`), para não sobrescrever o app de release.
 
+## 4b. Fase 8: backup e ajustes
+
+- **Importação foi descartada:** o usuário começa do zero, então só existe exportação.
+- **Exportar backup** (`src/data/repositories/backupRepo.ts`, `src/features/backup/`):
+  - `backup.exportAll()` lê numa transação as linhas cruas de `habit`, `habit_schedule`, `commit_entry`, `task`, `reminder` e `setting`. O cronômetro ativo fica fora.
+  - Formato: `{ app: 'todo-tracker', format: 1, schemaVersion, exportedAt, tables }`.
+  - `shareBackup` grava `todo-tracker-backup-AAAA-MM-DD.json` em `Paths.cache` (`expo-file-system`, API `File`) e abre o compartilhamento (`expo-sharing`).
+  - O plugin `expo-sharing` **não** está no `app.json`: ele serve só para receber compartilhamentos, e aqui só enviamos.
+- **Ajustes persistidos** (`src/features/settings/PreferenceCards.tsx`, mutação `useUpdateSetting`):
+  - tema: aplicado na hora e gravado; se a gravação falhar, volta ao anterior. Ao abrir, o `DatabaseProvider` lê o tema salvo e segura a splash (`preventAutoHideAsync`/`hideAsync`) até aplicar;
+  - início da semana e virada do dia **foram removidos** a pedido do usuário: semana fixa no domingo, dia pelo relógio (meia-noite). `Settings` tem só `theme`; chaves antigas no banco são ignoradas pelo `getAll`. As funções puras (`src/domain/`, `notifications/model.ts`, `timer/model.ts`, `ContributionGraph`, `DatePickerSheet`) mantêm os parâmetros `weekStart`/`rolloverHour` com padrão 0, mas o app não os usa.
+- **Bibliotecas nativas novas** (`expo-file-system`, `expo-sharing`): exigem **novo build de desenvolvimento** antes de testar no aparelho.
+
 ## 5. Pendências
 
-1. Fechar o diagnóstico das notificações (§4) e corrigir.
-2. Release pelo GitHub (§4): o usuário ainda decide entre A e B e se separa o pacote do APK de desenvolvimento.
-3. **Fase 8:**
-   - backup e importação em JSON;
-   - ajustes persistidos (tema, início da semana, `rolloverHour`) na tela de Ajustes. Hoje o tema fica só em memória, com padrão escuro, e os outros ajustes já existem no `settingsRepo`.
+1. Release pelo GitHub (§4): o usuário ainda decide entre A e B e se separa o pacote do APK de desenvolvimento.
 
 ## 6. Regras de trabalho com o usuário
 

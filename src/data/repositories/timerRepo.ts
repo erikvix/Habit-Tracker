@@ -101,7 +101,7 @@ export function createTimerRepo(ctx: RepoContext, settings: SettingsRepo, commit
 
         const minutes = minutesOverride ?? elapsedMinutes(row.started_at, clock.now());
         if (minutes < 1) return { minutes, commit: null };
-        const day = await settings.localDateOf(new Date(row.started_at), tx);
+        const day = await settings.localDateOf(new Date(row.started_at));
         const commit = await commits.insertWith(tx, habitId, day, Math.min(minutes, 1440), 'timer');
         return { minutes, commit };
       });

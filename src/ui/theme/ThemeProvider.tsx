@@ -15,7 +15,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function AppThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
-  // Padrão: escuro. A preferência passa a ser persistida (SQLite) na fase de Ajustes.
+  // Padrão: escuro. O valor salvo (SQLite) é aplicado pelo DatabaseProvider ao abrir.
   const [preference, setPreference] = useState<ThemePreference>('dark');
   const scheme = resolveScheme(preference, system);
 
